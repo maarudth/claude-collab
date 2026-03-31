@@ -1,0 +1,28 @@
+node_modules/
+dist/
+!extension/dist/
+
+# Runtime state files
+.notify-port
+.ws-port
+.listener-stop
+.listener-pid
+
+# Environment / secrets
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Internal dev files
+.claude/
+AUDIT.md
+TODO.md

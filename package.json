@@ -1,0 +1,30 @@
+{
+  "name": "claude-collab",
+  "version": "0.7.0",
+  "type": "module",
+  "description": "MCP server that gives Claude real-time browser control for collaborative UI/UX design",
+  "license": "MIT",
+  "keywords": ["claude", "mcp", "design", "ui", "ux", "collaboration", "browser", "playwright"],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "build:ext": "node extension/build.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@andresaya/edge-tts": "^1.8.0",
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@types/ws": "^8.18.1",
+    "playwright": "^1.52.0",
+    "ws": "^8.20.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  }
+}
