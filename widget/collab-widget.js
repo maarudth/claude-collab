@@ -453,7 +453,7 @@
   }
   followTabsBtn.onclick = function() {
     // Toggle via relay to content script → service worker
-    window.postMessage({ __dcRelay: true, action: 'toggle-follow' }, window.location.origin);
+    window.postMessage({ __dcRelay: true, action: 'toggle-follow' }, window.location.origin !== 'null' ? window.location.origin : '*');
     var isActive = followTabsBtn.classList.toggle('dc-active');
     followTabsBtn.title = isActive ? 'Follow tabs: ON' : 'Follow tabs: OFF';
     addMessage(isActive ? 'Follow tabs ON — widget will appear on any tab you switch to.' : 'Follow tabs OFF', 'system');
@@ -1181,7 +1181,7 @@
       window.postMessage({
         __dcRelay: true, action: 'chat-sync',
         chatText: text, chatRole: type, chatTime: msg.time
-      }, window.location.origin);
+      }, window.location.origin !== 'null' ? window.location.origin : '*');
     }
 
     // Cap messages array to prevent unbounded memory growth in long sessions
