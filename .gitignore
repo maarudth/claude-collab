@@ -24,5 +24,7 @@ Thumbs.db
 
 # Internal dev files
 .claude/
+AREAS/
+CLAUDE.md
 AUDIT.md
 TODO.md
