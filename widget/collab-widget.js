@@ -540,42 +540,6 @@
   makeDraggable(chat, chatHeader, positionStatusConsole);
   makeResizable(chat, 280, 200);
 
-  // Detect page theme so the widget matches on first render
-  // Tries background color detection, falls back to prefers-color-scheme, retries after delay
-  function applyDetectedTheme() {
-    try {
-      var els = [document.body, document.documentElement];
-      for (var i = 0; i < els.length; i++) {
-        if (!els[i]) continue;
-        var bg = getComputedStyle(els[i]).backgroundColor;
-        var m = bg.match(/\d+/g);
-        if (m && m.length >= 3) {
-          var a = m.length >= 4 ? parseFloat(m[3]) : 1;
-          if (a < 0.1) continue;
-          var lum = (0.299 * parseInt(m[0]) + 0.587 * parseInt(m[1]) + 0.114 * parseInt(m[2])) / 255;
-          var useLight = lum >= 0.5;
-          chat.classList.toggle('dc-light', useLight);
-          preview.classList.toggle('dc-light', useLight);
-          statusConsole.classList.toggle('dc-status-light', useLight);
-          return true;
-        }
-      }
-    } catch (e) { /* ignore */ }
-    return false;
-  }
-  // Try immediately
-  if (!applyDetectedTheme()) {
-    // Background was transparent — fall back to prefers-color-scheme
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      chat.classList.add('dc-light');
-      preview.classList.add('dc-light');
-      statusConsole.classList.add('dc-status-light');
-    }
-    // Also retry after styles settle (extension mode injects early)
-    setTimeout(applyDetectedTheme, 500);
-    setTimeout(applyDetectedTheme, 1500);
-  }
-
   // Position status console above the chat window (called on demand, no observer)
   function positionStatusConsole() {
     const chatRect = chat.getBoundingClientRect();
@@ -613,6 +577,42 @@
   document.body.appendChild(preview);
   makeDraggable(preview, prevHeader);
   makeResizable(preview, 200, 120);
+
+  // Detect page theme so the widget matches on first render
+  // Tries background color detection, falls back to prefers-color-scheme, retries after delay
+  function applyDetectedTheme() {
+    try {
+      var els = [document.body, document.documentElement];
+      for (var i = 0; i < els.length; i++) {
+        if (!els[i]) continue;
+        var bg = getComputedStyle(els[i]).backgroundColor;
+        var m = bg.match(/\d+/g);
+        if (m && m.length >= 3) {
+          var a = m.length >= 4 ? parseFloat(m[3]) : 1;
+          if (a < 0.1) continue;
+          var lum = (0.299 * parseInt(m[0]) + 0.587 * parseInt(m[1]) + 0.114 * parseInt(m[2])) / 255;
+          var useLight = lum >= 0.5;
+          chat.classList.toggle('dc-light', useLight);
+          preview.classList.toggle('dc-light', useLight);
+          statusConsole.classList.toggle('dc-status-light', useLight);
+          return true;
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return false;
+  }
+  // Try immediately
+  if (!applyDetectedTheme()) {
+    // Background was transparent — fall back to prefers-color-scheme
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      chat.classList.add('dc-light');
+      preview.classList.add('dc-light');
+      statusConsole.classList.add('dc-status-light');
+    }
+    // Also retry after styles settle (extension mode injects early)
+    setTimeout(applyDetectedTheme, 500);
+    setTimeout(applyDetectedTheme, 1500);
+  }
 
   // Prevent link navigation inside preview panel (options thumbnails contain <a> tags)
   previewContent.addEventListener('click', (e) => {
