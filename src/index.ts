@@ -37,17 +37,28 @@ import { registerActTool } from './tools/act.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, '..');
+// Claude Code truncates MCP server instructions at 2048 chars — INSTRUCTIONS.md
+// must stay under that budget. Deep reference lives in docs/PLAYBOOK.md, whose
+// absolute path is injected here so Claude can Read it on demand.
+const INSTRUCTIONS_CHAR_BUDGET = 2048;
 let instructions: string;
 try {
-  instructions = readFileSync(join(projectRoot, 'INSTRUCTIONS.md'), 'utf-8');
+  instructions = readFileSync(join(projectRoot, 'INSTRUCTIONS.md'), 'utf-8')
+    .replace('{{PLAYBOOK_PATH}}', join(projectRoot, 'docs', 'PLAYBOOK.md'));
 } catch {
   instructions = 'Design Collab — AI-Powered Visual Collaboration Tool. See INSTRUCTIONS.md for full guide.';
+}
+if (instructions.length > INSTRUCTIONS_CHAR_BUDGET) {
+  console.error(
+    `[design-collab] WARNING: instructions are ${instructions.length} chars — ` +
+    `Claude Code truncates at ${INSTRUCTIONS_CHAR_BUDGET}. Trim INSTRUCTIONS.md.`,
+  );
 }
 
 const server = new McpServer(
   {
     name: 'design-collab',
-    version: '0.7.0',  // keep in sync with package.json
+    version: '0.8.0',  // keep in sync with package.json
   },
   {
     instructions,

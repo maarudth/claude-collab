@@ -16,11 +16,23 @@ let lastReadIndex = 0;
 let cancelRequested = false;
 let idleFlag = false;
 
+// Mirror the widget's cap (1000 → trim to 500) so long sessions don't grow
+// the server process. Only already-read messages are trimmed.
+const MAX_MESSAGES = 1000;
+const TRIM_TO = 500;
+
 /** Push a user message (called when extension sends eventType: 'message'). */
 export function pushMessage(text: string, selections?: any[]): void {
   const entry: UserMessage = { text };
   if (selections && selections.length > 0) entry.selections = selections;
   messages.push(entry);
+  if (messages.length > MAX_MESSAGES) {
+    const drop = Math.min(messages.length - TRIM_TO, lastReadIndex);
+    if (drop > 0) {
+      messages.splice(0, drop);
+      lastReadIndex -= drop;
+    }
+  }
 }
 
 /** Set the cancel flag (called when extension sends eventType: 'cancel'). */

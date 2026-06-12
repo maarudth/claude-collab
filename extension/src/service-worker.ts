@@ -20,6 +20,10 @@ const managedTabs = new Set<number>();
 const followedTabs = new Set<number>(); // tabs added by follow-tabs (not originally browsed)
 const hiddenTabs = new Set<number>(); // tabs where collab UI is hidden
 let followTabs = false; // when true, widget auto-injects into any tab the user switches to
+// Set when the user explicitly disconnects from the popup. Suppresses
+// auto-reconnect (which would silently undo the disconnect while the MCP
+// server is still running). Persisted so MV3 service-worker restarts honor it.
+let userDisconnected = false;
 
 // ==================== Chat History Sync ====================
 // Central store for chat messages — synced across all managed tabs
@@ -56,7 +60,12 @@ function broadcastMessage(msg: ChatMsg, excludeTabId?: number): void {
         }
       },
       args: [msg.text, msg.role],
-    }).catch(() => { /* tab may be closed or restricted */ });
+    }).catch((err) => {
+      // Tab closed or restricted page — drop it from the managed set so we
+      // stop broadcasting into the void, and leave a trace for debugging.
+      console.warn(`[collab-sw] broadcast to tab ${tabId} failed, unmanaging:`, err?.message ?? err);
+      managedTabs.delete(tabId);
+    });
   }
 }
 
@@ -111,9 +120,10 @@ function connect(port: number): void {
   ws.onclose = () => {
     console.log('[design-collab] Disconnected from MCP server');
     ws = null;
+    if (userDisconnected) return; // user chose to disconnect — stay disconnected
     // Auto-reconnect: scan the port range after 3 seconds
     setTimeout(() => {
-      if (!ws) {
+      if (!ws && !userDisconnected) {
         console.log('[design-collab] Attempting reconnect...');
         autoConnect();
       }
@@ -126,11 +136,41 @@ function connect(port: number): void {
 }
 
 function disconnect(): void {
+  userDisconnected = true;
+  chrome.storage.local.set({ userDisconnected: true });
   wsPort = 0;
   if (ws) {
     ws.close();
     ws = null;
   }
+  // Disconnect means the session is over everywhere — remove the widget
+  // from every tab, not just the one the user is looking at.
+  void removeAllWidgets();
+}
+
+/** Remove the collab widget from ALL managed tabs (created and followed)
+ *  without closing any tabs. Used on explicit user disconnect. */
+async function removeAllWidgets(): Promise<void> {
+  const allTabs = new Set([...managedTabs, ...followedTabs]);
+  for (const tabId of allTabs) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        world: 'MAIN',
+        func: () => {
+          const selectors = '.dc-chat, .dc-preview, .dc-status-console, .dci-panel, .dci-snap-preview, .dc-capture-overlay, [id^="dc-panel-"]';
+          document.querySelectorAll(selectors).forEach(el => el.remove());
+          delete (window as any).__dcRelayInjected;
+          delete (window as any).__dc;
+          delete (window as any).__dcHiddenState;
+        },
+      });
+    } catch { /* tab may be closed or restricted */ }
+    managedTabs.delete(tabId);
+    followedTabs.delete(tabId);
+  }
+  hiddenTabs.clear();
+  console.log('[design-collab] Removed widgets from all tabs');
 }
 
 // ==================== Command Handler ====================
@@ -652,6 +692,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg.type === 'connect') {
+    // Explicit user action — clear the sticky disconnect state
+    userDisconnected = false;
+    chrome.storage.local.set({ userDisconnected: false });
     const port = msg.port || wsPort;
     const token = msg.token || '';
     if (token) {
@@ -679,44 +722,51 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'toggle-widget') {
     (async () => {
       try {
+        // Hide/show applies to ALL managed tabs — hiding in one tab and
+        // finding the widget alive in the next is confusing.
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        if (!tab?.id) { sendResponse({ ok: false }); return; }
-        const tabId = tab.id;
-        const isHidden = hiddenTabs.has(tabId);
+        const activeTabId = tab?.id;
+        const isHidden = activeTabId ? hiddenTabs.has(activeTabId) : hiddenTabs.size > 0;
+        const allTabs = new Set([...managedTabs, ...followedTabs]);
+        if (allTabs.size === 0) { sendResponse({ ok: false }); return; }
 
-        if (isHidden) {
-          // Show — restore elements
-          await chrome.scripting.executeScript({
-            target: { tabId },
-            world: 'MAIN',
-            func: () => {
-              const saved = (window as any).__dcHiddenState;
-              if (saved) {
-                for (const { el, display } of saved) {
-                  try { el.style.display = display; } catch {}
-                }
-                delete (window as any).__dcHiddenState;
-              }
-            },
-          });
-          hiddenTabs.delete(tabId);
-        } else {
-          // Hide — save display state and hide all collab elements
-          await chrome.scripting.executeScript({
-            target: { tabId },
-            world: 'MAIN',
-            func: () => {
-              const selectors = '.dc-chat, .dc-preview, .dc-status-console, .dci-panel, .dci-snap-preview, .dc-capture-overlay, [id^="dc-panel-"]';
-              const elements = document.querySelectorAll(selectors);
-              const state: Array<{ el: Element; display: string }> = [];
-              elements.forEach((el: any) => {
-                state.push({ el, display: el.style.display || '' });
-                el.style.display = 'none';
+        for (const tabId of allTabs) {
+          try {
+            if (isHidden) {
+              // Show — restore elements
+              await chrome.scripting.executeScript({
+                target: { tabId },
+                world: 'MAIN',
+                func: () => {
+                  const saved = (window as any).__dcHiddenState;
+                  if (saved) {
+                    for (const { el, display } of saved) {
+                      try { el.style.display = display; } catch {}
+                    }
+                    delete (window as any).__dcHiddenState;
+                  }
+                },
               });
-              (window as any).__dcHiddenState = state;
-            },
-          });
-          hiddenTabs.add(tabId);
+              hiddenTabs.delete(tabId);
+            } else {
+              // Hide — save display state and hide all collab elements
+              await chrome.scripting.executeScript({
+                target: { tabId },
+                world: 'MAIN',
+                func: () => {
+                  const selectors = '.dc-chat, .dc-preview, .dc-status-console, .dci-panel, .dci-snap-preview, .dc-capture-overlay, [id^="dc-panel-"]';
+                  const elements = document.querySelectorAll(selectors);
+                  const state: Array<{ el: Element; display: string }> = [];
+                  elements.forEach((el: any) => {
+                    state.push({ el, display: el.style.display || '' });
+                    el.style.display = 'none';
+                  });
+                  (window as any).__dcHiddenState = state;
+                },
+              });
+              hiddenTabs.add(tabId);
+            }
+          } catch { /* tab closed or restricted — skip */ }
         }
         sendResponse({ ok: true, hidden: !isHidden });
       } catch (err) {
@@ -871,12 +921,17 @@ async function autoConnect(attempt = 0): Promise<void> {
     return;
   }
 
-  // Read stored token on first attempt
-  if (attempt === 0 && !wsToken) {
+  // Read persisted state on first attempt (token + sticky disconnect)
+  if (attempt === 0) {
     try {
-      const stored = await chrome.storage.local.get(['wsAuthToken']);
-      if (stored.wsAuthToken) wsToken = stored.wsAuthToken;
+      const stored = await chrome.storage.local.get(['wsAuthToken', 'userDisconnected']);
+      if (stored.userDisconnected) userDisconnected = true;
+      if (!wsToken && stored.wsAuthToken) wsToken = stored.wsAuthToken;
     } catch {}
+  }
+  if (userDisconnected) {
+    console.log('[design-collab] User disconnected — not auto-connecting');
+    return;
   }
 
   const port = DEFAULT_PORT + attempt;

@@ -643,7 +643,8 @@
       .replace(/<object\b[^>]*>[\s\S]*?<\/object\s*>/gi, '')
       .replace(/<embed\b[^>]*\/?>/gi, '')
       .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-      .replace(/javascript\s*:/gi, 'blocked:');
+      .replace(/javascript\s*:/gi, 'blocked:')
+      .replace(/@import\b/gi, '/*blocked*/');
   }
 
   /** Apply sanitized AI-generated HTML to a DOM element. Defense-in-depth. */

@@ -11,6 +11,7 @@
   var followedTabs = /* @__PURE__ */ new Set();
   var hiddenTabs = /* @__PURE__ */ new Set();
   var followTabs = false;
+  var userDisconnected = false;
   var chatHistory = [];
   var MAX_CHAT_HISTORY = 200;
   function addToChatHistory(msg, sourceTabId) {
@@ -39,7 +40,9 @@
           }
         },
         args: [msg.text, msg.role]
-      }).catch(() => {
+      }).catch((err) => {
+        console.warn(`[collab-sw] broadcast to tab ${tabId} failed, unmanaging:`, err?.message ?? err);
+        managedTabs.delete(tabId);
       });
     }
   }
@@ -84,8 +87,9 @@
     ws.onclose = () => {
       console.log("[design-collab] Disconnected from MCP server");
       ws = null;
+      if (userDisconnected) return;
       setTimeout(() => {
-        if (!ws) {
+        if (!ws && !userDisconnected) {
           console.log("[design-collab] Attempting reconnect...");
           autoConnect();
         }
@@ -96,11 +100,37 @@
     };
   }
   function disconnect() {
+    userDisconnected = true;
+    chrome.storage.local.set({ userDisconnected: true });
     wsPort = 0;
     if (ws) {
       ws.close();
       ws = null;
     }
+    void removeAllWidgets();
+  }
+  async function removeAllWidgets() {
+    const allTabs = /* @__PURE__ */ new Set([...managedTabs, ...followedTabs]);
+    for (const tabId of allTabs) {
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId },
+          world: "MAIN",
+          func: () => {
+            const selectors = '.dc-chat, .dc-preview, .dc-status-console, .dci-panel, .dci-snap-preview, .dc-capture-overlay, [id^="dc-panel-"]';
+            document.querySelectorAll(selectors).forEach((el) => el.remove());
+            delete window.__dcRelayInjected;
+            delete window.__dc;
+            delete window.__dcHiddenState;
+          }
+        });
+      } catch {
+      }
+      managedTabs.delete(tabId);
+      followedTabs.delete(tabId);
+    }
+    hiddenTabs.clear();
+    console.log("[design-collab] Removed widgets from all tabs");
   }
   async function handleCommand(msg) {
     switch (msg.type) {
@@ -507,6 +537,8 @@
       return true;
     }
     if (msg.type === "connect") {
+      userDisconnected = false;
+      chrome.storage.local.set({ userDisconnected: false });
       const port = msg.port || wsPort;
       const token = msg.token || "";
       if (token) {
@@ -532,46 +564,52 @@
       (async () => {
         try {
           const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-          if (!tab?.id) {
+          const activeTabId = tab?.id;
+          const isHidden = activeTabId ? hiddenTabs.has(activeTabId) : hiddenTabs.size > 0;
+          const allTabs = /* @__PURE__ */ new Set([...managedTabs, ...followedTabs]);
+          if (allTabs.size === 0) {
             sendResponse({ ok: false });
             return;
           }
-          const tabId = tab.id;
-          const isHidden = hiddenTabs.has(tabId);
-          if (isHidden) {
-            await chrome.scripting.executeScript({
-              target: { tabId },
-              world: "MAIN",
-              func: () => {
-                const saved = window.__dcHiddenState;
-                if (saved) {
-                  for (const { el, display } of saved) {
-                    try {
-                      el.style.display = display;
-                    } catch {
+          for (const tabId of allTabs) {
+            try {
+              if (isHidden) {
+                await chrome.scripting.executeScript({
+                  target: { tabId },
+                  world: "MAIN",
+                  func: () => {
+                    const saved = window.__dcHiddenState;
+                    if (saved) {
+                      for (const { el, display } of saved) {
+                        try {
+                          el.style.display = display;
+                        } catch {
+                        }
+                      }
+                      delete window.__dcHiddenState;
                     }
                   }
-                  delete window.__dcHiddenState;
-                }
-              }
-            });
-            hiddenTabs.delete(tabId);
-          } else {
-            await chrome.scripting.executeScript({
-              target: { tabId },
-              world: "MAIN",
-              func: () => {
-                const selectors = '.dc-chat, .dc-preview, .dc-status-console, .dci-panel, .dci-snap-preview, .dc-capture-overlay, [id^="dc-panel-"]';
-                const elements = document.querySelectorAll(selectors);
-                const state = [];
-                elements.forEach((el) => {
-                  state.push({ el, display: el.style.display || "" });
-                  el.style.display = "none";
                 });
-                window.__dcHiddenState = state;
+                hiddenTabs.delete(tabId);
+              } else {
+                await chrome.scripting.executeScript({
+                  target: { tabId },
+                  world: "MAIN",
+                  func: () => {
+                    const selectors = '.dc-chat, .dc-preview, .dc-status-console, .dci-panel, .dci-snap-preview, .dc-capture-overlay, [id^="dc-panel-"]';
+                    const elements = document.querySelectorAll(selectors);
+                    const state = [];
+                    elements.forEach((el) => {
+                      state.push({ el, display: el.style.display || "" });
+                      el.style.display = "none";
+                    });
+                    window.__dcHiddenState = state;
+                  }
+                });
+                hiddenTabs.add(tabId);
               }
-            });
-            hiddenTabs.add(tabId);
+            } catch {
+            }
           }
           sendResponse({ ok: true, hidden: !isHidden });
         } catch (err) {
@@ -700,12 +738,17 @@
       console.log("[design-collab] No MCP server found on ports " + DEFAULT_PORT + "-" + (DEFAULT_PORT + MAX_PORT_ATTEMPTS - 1));
       return;
     }
-    if (attempt === 0 && !wsToken) {
+    if (attempt === 0) {
       try {
-        const stored = await chrome.storage.local.get(["wsAuthToken"]);
-        if (stored.wsAuthToken) wsToken = stored.wsAuthToken;
+        const stored = await chrome.storage.local.get(["wsAuthToken", "userDisconnected"]);
+        if (stored.userDisconnected) userDisconnected = true;
+        if (!wsToken && stored.wsAuthToken) wsToken = stored.wsAuthToken;
       } catch {
       }
+    }
+    if (userDisconnected) {
+      console.log("[design-collab] User disconnected \u2014 not auto-connecting");
+      return;
     }
     const port = DEFAULT_PORT + attempt;
     console.log(`[design-collab] Scanning port ${port}...`);

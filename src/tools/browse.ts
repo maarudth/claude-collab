@@ -9,6 +9,7 @@ import { isExtensionConnected } from '../ws-server.js';
 
 const __dirname_browse = dirname(fileURLToPath(import.meta.url));
 const LISTENER_PATH = join(__dirname_browse, '..', '..', 'scripts', 'listener.cjs');
+const PLAYBOOK_PATH = join(__dirname_browse, '..', '..', 'docs', 'PLAYBOOK.md');
 
 const LISTENER_INSTRUCTIONS = `
 ⚠️ REQUIRED — Do these steps NOW, before responding to the user:
@@ -22,6 +23,9 @@ const LISTENER_INSTRUCTIONS = `
 3. NEVER use waitForReply: true — it blocks message delivery.
 
 4. When the listener completes with a message, respond via design_chat, then start a NEW listener with the same command.
+
+Before complex work, Read the playbook (workflows, per-tool gotchas, limits):
+${PLAYBOOK_PATH}
 `;
 
 export function registerBrowseTool(server: McpServer): void {

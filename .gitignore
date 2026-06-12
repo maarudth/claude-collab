@@ -28,3 +28,6 @@ AREAS/
 CLAUDE.md
 AUDIT.md
 TODO.md
+
+# Tool artifacts
+.playwright-mcp/

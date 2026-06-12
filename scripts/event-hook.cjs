@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 /**
- * PostToolUse hook for design-collab.
+ * PostToolUse hook for design-collab. LEGACY — not installed by setup.cjs.
+ *
+ * The canonical configuration delivers messages via cancel-hook.cjs on
+ * PreToolUse (it checks both /cancel and /pending before every tool call),
+ * making this PostToolUse variant redundant. Kept for setups that prefer
+ * post-call delivery.
  *
  * Queries the MCP server's GET /pending endpoint to fetch unread user
  * messages from the widget state. Outputs them so Claude sees them

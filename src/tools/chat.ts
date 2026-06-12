@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -7,7 +8,20 @@ import { fulfillCaptureRects } from '../capture.js';
 import { getPage } from '../browser.js';
 
 const __dirname_chat = dirname(fileURLToPath(import.meta.url));
-const LISTENER_PATH = join(__dirname_chat, '..', '..', 'scripts', 'listener.cjs');
+const PROJECT_ROOT = join(__dirname_chat, '..', '..');
+const LISTENER_PATH = join(PROJECT_ROOT, 'scripts', 'listener.cjs');
+const LISTENER_PID_FILE = join(PROJECT_ROOT, '.listener-pid');
+
+/** True if the background listener process is currently alive. */
+function isListenerAlive(): boolean {
+  try {
+    const pid = parseInt(readFileSync(LISTENER_PID_FILE, 'utf-8').trim(), 10);
+    process.kill(pid, 0); // signal 0 — existence check only
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function registerChatTool(server: McpServer): void {
   server.tool(
@@ -27,11 +41,13 @@ export function registerChatTool(server: McpServer): void {
       }, message);
 
       if (!waitForReply) {
+        const reminder = isListenerAlive()
+          ? ''
+          : `\n⚠️ LISTENER IS DOWN — start it NOW: run node "${LISTENER_PATH}" with run_in_background: true. Without it you CANNOT hear the user while idle.`;
         return {
           content: [{
             type: 'text' as const,
-            text: JSON.stringify({ sent: true, message }) +
-              `\n⚠️ RESTART LISTENER NOW — run node "${LISTENER_PATH}" with run_in_background: true. Without it you CANNOT hear the user.`,
+            text: JSON.stringify({ sent: true, message }) + reminder,
           }],
         };
       }

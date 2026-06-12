@@ -495,11 +495,9 @@ function startNotifyServer(): Promise<number> {
         res.end('{"ok":true}');
       });
     } else if (req.method === 'OPTIONS') {
-      res.writeHead(204, {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, GET',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      });
+      // No CORS headers: this server is only called by local Node hook
+      // scripts (no browser origin), and it binds to 127.0.0.1 anyway.
+      res.writeHead(204);
       res.end();
     } else {
       res.writeHead(404);
