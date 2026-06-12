@@ -43,8 +43,18 @@ try {
   input = fs.readFileSync(0, 'utf-8');
 } catch {}
 try {
+  const parsed = JSON.parse(input) || {};
+  const sessionId = String(parsed.session_id || '');
+  const toolName = String(parsed.tool_name || '');
+
+  // collab_browse is the deliberate "join" — the calling session claims
+  // (or takes over) message ownership. Other collab tools do NOT claim,
+  // so a stray collab_chat from another terminal can't hijack the session.
+  if (sessionId && /collab_browse$/.test(toolName)) {
+    try { fs.writeFileSync(OWNER_FILE, sessionId); } catch {}
+  }
+
   const owner = fs.readFileSync(OWNER_FILE, 'utf-8').trim();
-  const sessionId = String((JSON.parse(input) || {}).session_id || '');
   if (owner && sessionId && owner !== sessionId) process.exit(0);
 } catch {} // no owner file or unparsable stdin — proceed (pre-claim sessions)
 
