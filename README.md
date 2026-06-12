@@ -92,7 +92,7 @@ The browser opens with a chat widget in the page — from there, talk to Claude 
 
 ## Tools
 
-27 MCP tools, organized by workflow. Highlights:
+26 MCP tools, organized by workflow — complete reference with all parameters in [docs/TOOLS.md](docs/TOOLS.md). Highlights:
 
 | Workflow | Tools |
 |---|---|
