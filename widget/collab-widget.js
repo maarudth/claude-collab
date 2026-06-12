@@ -456,7 +456,7 @@
     window.postMessage({ __dcRelay: true, action: 'toggle-follow' }, window.location.origin !== 'null' ? window.location.origin : '*');
     var isActive = followTabsBtn.classList.toggle('dc-active');
     followTabsBtn.title = isActive ? 'Follow tabs: ON' : 'Follow tabs: OFF';
-    addMessage(isActive ? 'Follow tabs ON — widget will appear on any tab you switch to.' : 'Follow tabs OFF', 'system');
+    addMessage(isActive ? 'Follow tabs ON — widget will appear on any tab you switch to.' : 'Follow tabs OFF — widget stays on this tab only.', 'system');
   };
 
   const minBtn = createEl('button', 'dc-btn dc-minimize');
@@ -601,17 +601,27 @@
     } catch (e) { /* ignore */ }
     return false;
   }
-  // Try immediately
-  if (!applyDetectedTheme()) {
-    // Background was transparent — fall back to prefers-color-scheme
+  // In tabs/extension mode, the wrapper bg is misleading — rely on iframe-bridge for theme.
+  // In single mode (no iframe), detect from the page directly.
+  var hasIframeBridge = window.__dcTabs || (window.name && window.name.startsWith('dc-frame-'));
+  if (hasIframeBridge) {
+    // Use prefers-color-scheme as a sane default until iframe-bridge reports real theme
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
       chat.classList.add('dc-light');
       preview.classList.add('dc-light');
       statusConsole.classList.add('dc-status-light');
     }
-    // Also retry after styles settle (extension mode injects early)
-    setTimeout(applyDetectedTheme, 500);
-    setTimeout(applyDetectedTheme, 1500);
+  } else {
+    // Single mode — detect from page background
+    if (!applyDetectedTheme()) {
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+        chat.classList.add('dc-light');
+        preview.classList.add('dc-light');
+        statusConsole.classList.add('dc-status-light');
+      }
+      setTimeout(applyDetectedTheme, 500);
+      setTimeout(applyDetectedTheme, 1500);
+    }
   }
 
   // Prevent link navigation inside preview panel (options thumbnails contain <a> tags)
@@ -1070,6 +1080,8 @@
     .dc-preview.dc-light { background: rgba(255,255,255,0.95); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px); border-color: rgba(180,180,200,0.18); box-shadow: 0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.5); }
     .dc-preview.dc-light .dc-header { background: linear-gradient(135deg, rgba(140,130,180,0.06), rgba(120,170,180,0.04)); border-bottom-color: rgba(180,180,200,0.12); }
     .dc-preview.dc-light .dc-header-title { background: linear-gradient(135deg, #6860a0, #508898); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .dc-preview.dc-light .dc-btn { color: rgba(100,100,120,0.4); }
+    .dc-preview.dc-light .dc-btn:hover { background: rgba(100,100,120,0.08); color: rgba(80,80,100,0.6); }
     .dc-preview.dc-light .dc-preview-content::-webkit-scrollbar-thumb { background: rgba(180,180,200,0.2); }
   `;
   document.head.appendChild(styleEl);
@@ -1503,6 +1515,11 @@
       window.__dcInspector.toggle();
       inspectorToggle.classList.toggle('dc-active', window.__dcInspector.isVisible());
     }
+  });
+
+  // Sync toggle icon when inspector is closed via its own close button
+  window.addEventListener('dc-inspector-hidden', () => {
+    inspectorToggle.classList.remove('dc-active');
   });
 
   // ---- Ruler toggle via iframe bridge (postMessage) ----

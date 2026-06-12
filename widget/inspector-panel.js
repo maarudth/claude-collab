@@ -158,15 +158,15 @@
     .dci-light .dci-el-desc { background: rgba(240,240,248,0.4) !important; color: rgba(100,95,150,0.7) !important; border-bottom-color: rgba(180,180,200,0.1) !important; }
     .dci-light .dci-body { color: #444 !important; }
     .dci-light .dci-body::-webkit-scrollbar-thumb { background: rgba(180,180,200,0.2); }
-    .dci-light .dci-sec-header { color: rgba(100,100,120,0.5) !important; }
+    .dci-light .dci-sec-header { color: rgba(80,80,100,0.7) !important; }
     .dci-light .dci-footer { border-top-color: rgba(180,180,200,0.12) !important; }
     .dci-light .dci-dock-btns { border-top-color: rgba(180,180,200,0.12) !important; }
-    .dci-light label { color: rgba(100,100,120,0.6) !important; }
+    .dci-light label { color: rgba(70,70,90,0.75) !important; }
     .dci-light input, .dci-light select { background: rgba(255,255,255,0.5) !important; border-color: rgba(180,180,200,0.15) !important; color: #444 !important; }
     .dci-light input:focus, .dci-light select:focus { border-color: rgba(120,115,170,0.3) !important; }
     .dci-light option { background: rgba(255,255,255,0.9) !important; color: #444 !important; }
-    .dci-light button { color: rgba(100,100,120,0.5) !important; }
-    .dci-light button:hover { background: rgba(100,100,120,0.08) !important; color: rgba(80,80,100,0.6) !important; }
+    .dci-light button { color: rgba(80,80,100,0.65) !important; }
+    .dci-light button:hover { background: rgba(100,100,120,0.1) !important; color: rgba(60,60,80,0.8) !important; }
     .dci-light .dci-snap-preview { background: rgba(240,240,248,0.4) !important; border-color: rgba(180,180,200,0.15) !important; }
     /* Copy/Reset footer buttons — softer in light mode */
     .dci-light .dci-footer button,
@@ -188,7 +188,7 @@
     copyBtn.style.cssText = `
       all: unset; flex: 1; padding: 6px 12px; border-radius: 6px;
       cursor: pointer; font-size: 11px; font-weight: 600; text-align: center;
-      ${light ? 'background: rgba(240,240,248,0.5); color: rgba(100,95,150,0.8); border: 1px solid rgba(180,180,200,0.15);' : 'background: rgba(120,115,170,0.5); color: rgba(255,255,255,0.9);'}
+      ${light ? 'background: rgba(240,240,248,0.6); color: rgba(80,75,130,0.9); border: 1px solid rgba(180,180,200,0.2);' : 'background: rgba(120,115,170,0.5); color: rgba(255,255,255,0.9);'}
     `;
   }
   styleCopyBtn();
@@ -329,6 +329,10 @@
       panel.style.width = w;
     }
 
+    // Make background opaque when docked — semi-transparent bg looks bad against wrapper body
+    const light = isLightMode();
+    panel.style.background = light ? 'rgba(255,255,255,0.97)' : 'rgba(14,14,22,0.95)';
+
     // Horizontal layout for top/bottom docking — sections side by side
     applyDockLayout(edge);
 
@@ -419,6 +423,9 @@
     dockedEdge = null;
     panel.style.transition = 'all 0.25s ease';
     panel.style.borderRadius = '12px';
+    // Restore semi-transparent bg when floating
+    const light = isLightMode();
+    panel.style.background = light ? 'rgba(255,255,255,0.65)' : 'rgba(14,14,22,0.6)';
     panel.style.width = '280px';
     panel.style.height = '';
     panel.style.right = 'auto';
@@ -1041,6 +1048,7 @@
 
   function hidePanel() {
     panelVisible = false;
+    window.dispatchEvent(new CustomEvent('dc-inspector-hidden'));
     if (dockedEdge) {
       // Animate content back first, then hide panel
       clearPageOffsets();
