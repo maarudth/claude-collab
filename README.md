@@ -2,6 +2,10 @@
 
 **Pair with [Claude Code](https://docs.anthropic.com/en/docs/claude-code) inside the live page.** A shared browser where you and Claude work as peers: you chat through a widget in the page, point at elements by clicking them, and Claude browses, builds, and renders its work right where you're both looking — including in your real Chrome, on any site you're logged into.
 
+![Chatting with Claude in the live page: it mocks up hero color options, applies the pick, and gets asked to commit it](docs/demo.gif)
+
+*One extension-mode session in a real Chrome tab — conversation, live restyle, and "commit it to code" without leaving the page. [Watch the full demo (~2.5 min)](https://github.com/maarudth/claude-collab/releases/tag/v0.8.0).*
+
 Built as an [MCP server](https://modelcontextprotocol.io/) for Claude Code. Open source, MIT.
 
 ## Why
