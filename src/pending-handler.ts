@@ -44,11 +44,15 @@ export async function handlePending(
 
   // Fast path: read from server-side store (populated by extension push events).
   // No evalWidget round-trip needed — completes in <1ms.
-  const stored = consumeMessages();
+  // parkImages: this endpoint feeds hooks/the listener, which deliver text only —
+  // attachments are parked for collab_inbox and stripped from the response.
+  const stored = consumeMessages(true);
   if (stored.length > 0) {
     console.error(`[pending] Delivering ${stored.length} message(s) from store`);
     res.writeHead(200, headers);
-    res.end(JSON.stringify({ messages: stored }));
+    res.end(JSON.stringify({
+      messages: stored.map(({ imageData, mimeType, ...rest }) => rest),
+    }));
     return;
   }
 

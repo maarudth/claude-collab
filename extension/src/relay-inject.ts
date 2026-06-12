@@ -24,10 +24,13 @@ if (!(window as any).__dcRelayInjected) {
 
   // Handler for commands arriving on port1 (widget sends via port2)
   function onPort1Message(event: MessageEvent) {
-    const { action, text, selections, optsJson, requestId: widgetRequestId } = event.data || {};
+    const { action, text, selections, imageData, mimeType, optsJson, requestId: widgetRequestId } = event.data || {};
 
     if (action === 'message' && text) {
-      window.postMessage({ __dcRelay: true, action: 'message', text, selections: selections || null }, origin);
+      window.postMessage({
+        __dcRelay: true, action: 'message', text, selections: selections || null,
+        imageData: imageData || null, mimeType: mimeType || null,
+      }, origin);
     } else if (action === 'cancel') {
       window.postMessage({ __dcRelay: true, action: 'cancel' }, origin);
     } else if (action === 'screenshot') {

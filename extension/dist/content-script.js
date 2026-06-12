@@ -7,11 +7,21 @@
   function dcContentHandler(event) {
     if (event.source !== window) return;
     if (!event.data?.__dcRelay) return;
-    const { action, text, selections } = event.data;
+    if (!chrome.runtime?.id) {
+      window.removeEventListener("message", dcContentHandler);
+      return;
+    }
+    const { action, text, selections, imageData, mimeType } = event.data;
     const senderOrigin = event.origin || window.location.origin;
     console.log("[dc-content] Relay event:", action, text?.slice(0, 50));
     if (action === "message" && text) {
-      chrome.runtime.sendMessage({ type: "dc-relay-message", text, selections: selections || null }, (response) => {
+      chrome.runtime.sendMessage({
+        type: "dc-relay-message",
+        text,
+        selections: selections || null,
+        imageData: imageData || null,
+        mimeType: mimeType || null
+      }, (response) => {
         console.log("[dc-content] Relay response:", response);
       });
     } else if (action === "cancel") {
@@ -23,6 +33,8 @@
     } else if (action === "chat-sync") {
       const { chatText, chatRole, chatTime } = event.data;
       chrome.runtime.sendMessage({ type: "dc-chat-sync", text: chatText, role: chatRole, time: chatTime });
+    } else if (action === "voice-active") {
+      chrome.runtime.sendMessage({ type: "dc-voice-active" });
     } else if (action === "screenshot") {
       const { requestId, opts } = event.data;
       chrome.runtime.sendMessage({ type: "dc-relay-screenshot", requestId, opts }, (response) => {

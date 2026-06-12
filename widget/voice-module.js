@@ -293,6 +293,13 @@
   function toggleVoice() {
     voice.active = !voice.active;
     if (voice.active) {
+      // Claim the mic browser-wide: Chrome allows ONE speech session per
+      // browser, so other tabs' widgets must release theirs or they steal
+      // the session back and forth ("aborted" loops, silent transcripts)
+      try {
+        window.postMessage({ __dcRelay: true, action: 'voice-active' },
+          window.location.origin !== 'null' ? window.location.origin : '*');
+      } catch (_) {}
       startListening();
       window.__dc.api.system('Voice mode ON — speak naturally');
     } else {
@@ -302,6 +309,16 @@
     }
     updateMicUI();
   }
+
+  // Called (via service worker broadcast) when another tab takes the mic
+  voice.release = function () {
+    if (!voice.active) return;
+    voice.active = false;
+    stopListening();
+    voice.stopAudio();
+    updateMicUI();
+    window.__dc.api.system('Voice mode moved to another tab — mic released here.');
+  };
 
   function updateMicUI() {
     if (!micBtn) return;

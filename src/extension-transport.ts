@@ -17,6 +17,10 @@ let requestId = 0;
 
 export class ExtensionTransport implements DesignTransport {
   private conn: WebSocketConnection | null = null;
+  // Connections that already have a message handler — setupMessageHandler is
+  // reachable from both onExtensionReconnect and connectExisting (repeat
+  // collab_browse calls), and double-attaching duplicates every user message
+  private handledConns = new WeakSet<WebSocketConnection>();
   private pending = new Map<string, { resolve: (val: any) => void; reject: (err: Error) => void }>();
   private managedTabs = new Set<number>();
   private activeTabId: number | null = null;
@@ -62,8 +66,14 @@ export class ExtensionTransport implements DesignTransport {
 
   private setupMessageHandler(): void {
     if (!this.conn) return;
+    if (this.handledConns.has(this.conn)) return; // already wired — avoid duplicate delivery
+    this.handledConns.add(this.conn);
+    // Capture the connection this handler set belongs to — the close handler
+    // must not act if a newer connection has already replaced it (a stale
+    // socket's delayed close event would otherwise orphan the live one)
+    const conn = this.conn;
 
-    this.conn.on('message', (data: any) => {
+    conn.on('message', (data: any) => {
       try {
         const text = typeof data === 'string' ? data : data.toString();
         const msg = JSON.parse(text);
@@ -84,8 +94,8 @@ export class ExtensionTransport implements DesignTransport {
         // Store server-side so /pending can respond instantly without evalWidget round-trip
         if (msg.type === 'event') {
           if (msg.eventType === 'message' && msg.data?.text) {
-            pushMessage(msg.data.text, msg.data.selections);
-            console.error(`[collab] User message stored: "${msg.data.text.slice(0, 80)}"`);
+            pushMessage(msg.data.text, msg.data.selections, msg.data.imageData, msg.data.mimeType);
+            console.error(`[collab] User message stored: "${msg.data.text.slice(0, 80)}"${msg.data.imageData ? ' [+image]' : ''}`);
           } else if (msg.eventType === 'cancel') {
             requestCancel();
             console.error('[collab] Cancel requested');
@@ -100,7 +110,8 @@ export class ExtensionTransport implements DesignTransport {
       }
     });
 
-    this.conn.on('close', () => {
+    conn.on('close', () => {
+      if (this.conn !== conn) return; // a newer connection already took over
       // Reject all pending requests
       for (const [id, { reject }] of this.pending) {
         reject(new Error('Extension disconnected'));
@@ -133,6 +144,12 @@ export class ExtensionTransport implements DesignTransport {
 
       this.conn.send(JSON.stringify({ id, ...msg }));
     });
+  }
+
+  /** Deliver an AI chat message to all widget tabs via structured command —
+   *  no eval(), so it works on strict-CSP pages (eval-based delivery doesn't). */
+  async deliverChat(text: string): Promise<void> {
+    await this.send({ type: 'chat-deliver', text });
   }
 
   async evalWidget(fnOrCode: Function | string, arg?: any): Promise<any> {

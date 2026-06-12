@@ -145,6 +145,11 @@
         return await handleScreenshot(msg);
       case "set-viewport":
         return await handleSetViewport(msg);
+      case "chat-deliver": {
+        const chatMsg = { text: String(msg.text || ""), role: "ai", time: Date.now() };
+        addToChatHistory(chatMsg);
+        return { delivered: true };
+      }
       case "notify":
         return await handleEval({ type: "eval-widget", code: msg.code });
       case "cleanup":
@@ -300,7 +305,24 @@
       world: "MAIN",
       files: ["widget-bundle.js"]
     });
+    await hydrateWidget(tabId);
     return { injected: true };
+  }
+  async function hydrateWidget(tabId) {
+    if (chatHistory.length === 0) return;
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        world: "MAIN",
+        func: (history) => {
+          const dc = window.__dc;
+          if (dc?.api?.hydrate) dc.api.hydrate(history);
+        },
+        args: [chatHistory]
+      });
+    } catch (err) {
+      console.warn(`[collab] Hydration failed for tab ${tabId}:`, err);
+    }
   }
   async function captureFullPage(tabId) {
     const debugTarget = { tabId };
@@ -366,14 +388,18 @@
         cropRect = results[0].result;
       }
     } else if (msg.opts?.clip && msg.opts.clip.w > 0 && msg.opts.clip.h > 0) {
-      const dprResults = await chrome.scripting.executeScript({
+      const metricsResults = await chrome.scripting.executeScript({
         target: { tabId },
-        func: () => window.devicePixelRatio || 1
+        func: () => ({
+          dpr: window.devicePixelRatio || 1,
+          sx: window.scrollX || 0,
+          sy: window.scrollY || 0
+        })
       });
-      const dpr = dprResults?.[0]?.result || 1;
+      const { dpr = 1, sx = 0, sy = 0 } = metricsResults?.[0]?.result || {};
       cropRect = {
-        x: Math.round(msg.opts.clip.x * dpr),
-        y: Math.round(msg.opts.clip.y * dpr),
+        x: Math.round((msg.opts.clip.x - sx) * dpr),
+        y: Math.round((msg.opts.clip.y - sy) * dpr),
         width: Math.round(msg.opts.clip.w * dpr),
         height: Math.round(msg.opts.clip.h * dpr)
       };
@@ -382,9 +408,13 @@
       const response = await fetch(dataUrl);
       const blob = await response.blob();
       const bitmap = await createImageBitmap(blob);
-      const canvas = new OffscreenCanvas(cropRect.width, cropRect.height);
+      const cx = Math.max(0, Math.min(cropRect.x, bitmap.width - 1));
+      const cy = Math.max(0, Math.min(cropRect.y, bitmap.height - 1));
+      const cw = Math.max(1, Math.min(cropRect.width, bitmap.width - cx));
+      const ch = Math.max(1, Math.min(cropRect.height, bitmap.height - cy));
+      const canvas = new OffscreenCanvas(cw, ch);
       const ctx = canvas.getContext("2d");
-      ctx.drawImage(bitmap, cropRect.x, cropRect.y, cropRect.width, cropRect.height, 0, 0, cropRect.width, cropRect.height);
+      ctx.drawImage(bitmap, cx, cy, cw, ch, 0, 0, cw, ch);
       bitmap.close();
       const croppedBlob = await canvas.convertToBlob({ type: "image/png" });
       const arrayBuf = await croppedBlob.arrayBuffer();
@@ -524,6 +554,7 @@
         world: "MAIN",
         files: ["widget-bundle.js"]
       });
+      await hydrateWidget(tabId);
       console.log(`[collab] Widget re-injected into tab ${tabId}`);
     } catch (err) {
       console.error(`[collab] Failed to re-inject widget into tab ${tabId}:`, err);
@@ -653,6 +684,10 @@
     if (msg.type === "dc-relay-message") {
       const data = { text: msg.text };
       if (msg.selections) data.selections = msg.selections;
+      if (msg.imageData) {
+        data.imageData = msg.imageData;
+        data.mimeType = msg.mimeType || "image/png";
+      }
       const payload = JSON.stringify({ type: "event", eventType: "message", data });
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(payload);
@@ -674,6 +709,23 @@
     if (msg.type === "dc-chat-sync") {
       const senderTabId = sender?.tab?.id;
       addToChatHistory({ text: msg.text, role: msg.role, time: msg.time || Date.now() }, senderTabId);
+      sendResponse({ ok: true });
+      return;
+    }
+    if (msg.type === "dc-voice-active") {
+      const claimingTabId = sender?.tab?.id;
+      for (const tabId of managedTabs) {
+        if (tabId === claimingTabId) continue;
+        chrome.scripting.executeScript({
+          target: { tabId },
+          world: "MAIN",
+          func: () => {
+            const dc = window.__dc;
+            if (dc?.voice?.release) dc.voice.release();
+          }
+        }).catch(() => {
+        });
+      }
       sendResponse({ ok: true });
       return;
     }
@@ -710,18 +762,22 @@
           }
           const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
           if (opts.x !== void 0 && opts.w > 0 && opts.h > 0) {
-            const dprResults = await chrome.scripting.executeScript({
+            const metricsResults = await chrome.scripting.executeScript({
               target: { tabId: tab.id },
-              func: () => window.devicePixelRatio || 1
+              func: () => ({
+                dpr: window.devicePixelRatio || 1,
+                sx: window.scrollX || 0,
+                sy: window.scrollY || 0
+              })
             });
-            const dpr = dprResults?.[0]?.result || 1;
+            const { dpr = 1, sx = 0, sy = 0 } = metricsResults?.[0]?.result || {};
             const response = await fetch(dataUrl);
             const blob = await response.blob();
             const bitmap = await createImageBitmap(blob);
-            const cx = Math.round(opts.x * dpr);
-            const cy = Math.round(opts.y * dpr);
-            const cw = Math.round(opts.w * dpr);
-            const ch = Math.round(opts.h * dpr);
+            const cx = Math.max(0, Math.min(Math.round((opts.x - sx) * dpr), bitmap.width - 1));
+            const cy = Math.max(0, Math.min(Math.round((opts.y - sy) * dpr), bitmap.height - 1));
+            const cw = Math.max(1, Math.min(Math.round(opts.w * dpr), bitmap.width - cx));
+            const ch = Math.max(1, Math.min(Math.round(opts.h * dpr), bitmap.height - cy));
             const canvas = new OffscreenCanvas(cw, ch);
             const ctx = canvas.getContext("2d");
             ctx.drawImage(bitmap, cx, cy, cw, ch, 0, 0, cw, ch);
@@ -786,6 +842,9 @@
     if (alarm.name === "keepalive") {
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "ping" }));
+      } else if (!userDisconnected && (!ws || ws.readyState === WebSocket.CLOSED)) {
+        console.log("[collab] Keepalive: WS down, attempting reconnect...");
+        autoConnect();
       }
     }
   });

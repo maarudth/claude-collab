@@ -3,6 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getTransport } from '../transport.js';
 import { fulfillCaptureRects } from '../capture.js';
 import { getPage } from '../browser.js';
+import { consumeMessages, peekMessages, takeParkedImages } from '../message-store.js';
 
 export function registerInboxTool(server: McpServer): void {
   server.tool(
@@ -13,6 +14,12 @@ export function registerInboxTool(server: McpServer): void {
     },
     async ({ timeout }) => {
       const t = getTransport();
+
+      // Extension mode: the server-side store is the single source of truth.
+      // No evalWidget — widget state is per-tab and unreliable across tabs.
+      if (t.getMode() === 'extension') {
+        return readFromStore(timeout);
+      }
 
       // Check if there are unread user messages right now
       const hasUnread = await t.evalWidget(() => {
@@ -54,6 +61,43 @@ export function registerInboxTool(server: McpServer): void {
       }
     },
   );
+}
+
+/** Extension mode: read from the server store — messages, attachments, parked images. */
+async function readFromStore(timeout: number) {
+  let msgs = consumeMessages();
+  let parked = takeParkedImages();
+
+  // Short poll if nothing yet and a timeout was requested
+  if (msgs.length === 0 && parked.length === 0 && timeout > 0) {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 250));
+      if (peekMessages().length > 0) {
+        msgs = consumeMessages();
+        parked = takeParkedImages();
+        break;
+      }
+    }
+  }
+
+  const content: Array<{ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }> = [];
+  content.push({
+    type: 'text' as const,
+    text: JSON.stringify({
+      hasMessages: msgs.length > 0 || parked.length > 0,
+      replies: msgs.map(m => m.text).filter(Boolean),
+    }),
+  });
+  for (const img of parked) {
+    content.push({ type: 'image' as const, data: img.imageData, mimeType: img.mimeType });
+  }
+  for (const m of msgs) {
+    if (m.imageData) {
+      content.push({ type: 'image' as const, data: m.imageData, mimeType: m.mimeType || 'image/png' });
+    }
+  }
+  return { content };
 }
 
 async function readAndReturn(t: any, hasMessages: boolean) {

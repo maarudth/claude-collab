@@ -18,6 +18,7 @@ const http = require('http');
 const PROJECT_ROOT = path.join(__dirname, '..');
 const NOTIFY_PORT_FILE = path.join(PROJECT_ROOT, '.notify-port');
 const WS_PORT_FILE = path.join(PROJECT_ROOT, '.ws-port');
+const OWNER_FILE = path.join(PROJECT_ROOT, '.owner-session');
 
 // Collect candidate ports + tokens
 const targets = [];
@@ -32,6 +33,20 @@ for (const file of [NOTIFY_PORT_FILE, WS_PORT_FILE]) {
 }
 
 if (targets.length === 0) process.exit(0); // No collab session
+
+// This hook is installed globally and fires in EVERY Claude session — only
+// the session that ran collab_browse (recorded in .owner-session) may consume
+// and deliver collab messages. Others exit silently.
+let input = '';
+try {
+  process.stdin.setEncoding('utf-8');
+  input = fs.readFileSync(0, 'utf-8');
+} catch {}
+try {
+  const owner = fs.readFileSync(OWNER_FILE, 'utf-8').trim();
+  const sessionId = String((JSON.parse(input) || {}).session_id || '');
+  if (owner && sessionId && owner !== sessionId) process.exit(0);
+} catch {} // no owner file or unparsable stdin — proceed (pre-claim sessions)
 
 function httpGet(port, token, endpoint, callback) {
   const req = http.get(

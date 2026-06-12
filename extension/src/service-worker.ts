@@ -193,6 +193,14 @@ async function handleCommand(msg: any): Promise<any> {
     case 'set-viewport':
       return await handleSetViewport(msg);
 
+    case 'chat-deliver': {
+      // AI chat message from the MCP server — store in history and render in
+      // EVERY widget tab via executeScript({func}), which page CSP can't block
+      const chatMsg = { text: String(msg.text || ''), role: 'ai', time: Date.now() };
+      addToChatHistory(chatMsg); // no exclude — broadcast renders it everywhere
+      return { delivered: true };
+    }
+
     case 'notify':
       // Fire-and-forget: eval notification code in the active tab's widget
       return await handleEval({ type: 'eval-widget', code: msg.code });
@@ -393,7 +401,27 @@ async function handleInjectWidget(msg: { tabId: number }): Promise<any> {
     files: ['widget-bundle.js'],
   });
 
+  await hydrateWidget(tabId);
+
   return { injected: true };
+}
+
+/** Push the canonical chat history into a freshly injected widget. */
+async function hydrateWidget(tabId: number): Promise<void> {
+  if (chatHistory.length === 0) return;
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      func: (history: ChatMsg[]) => {
+        const dc = (window as any).__dc;
+        if (dc?.api?.hydrate) dc.api.hydrate(history);
+      },
+      args: [chatHistory],
+    });
+  } catch (err) {
+    console.warn(`[collab] Hydration failed for tab ${tabId}:`, err);
+  }
 }
 
 // ==================== Screenshot ====================
@@ -483,14 +511,20 @@ async function handleScreenshot(msg: { tabId?: number; opts: any }): Promise<any
       cropRect = results[0].result;
     }
   } else if (msg.opts?.clip && msg.opts.clip.w > 0 && msg.opts.clip.h > 0) {
-    const dprResults = await chrome.scripting.executeScript({
+    // Clip rects arrive in page coordinates (Playwright clip semantics) but
+    // captureVisibleTab only captures the viewport — translate by scroll offset
+    const metricsResults = await chrome.scripting.executeScript({
       target: { tabId },
-      func: () => window.devicePixelRatio || 1,
+      func: () => ({
+        dpr: window.devicePixelRatio || 1,
+        sx: window.scrollX || 0,
+        sy: window.scrollY || 0,
+      }),
     });
-    const dpr = dprResults?.[0]?.result || 1;
+    const { dpr = 1, sx = 0, sy = 0 } = metricsResults?.[0]?.result || {};
     cropRect = {
-      x: Math.round(msg.opts.clip.x * dpr),
-      y: Math.round(msg.opts.clip.y * dpr),
+      x: Math.round((msg.opts.clip.x - sx) * dpr),
+      y: Math.round((msg.opts.clip.y - sy) * dpr),
       width: Math.round(msg.opts.clip.w * dpr),
       height: Math.round(msg.opts.clip.h * dpr),
     };
@@ -501,9 +535,15 @@ async function handleScreenshot(msg: { tabId?: number; opts: any }): Promise<any
     const response = await fetch(dataUrl);
     const blob = await response.blob();
     const bitmap = await createImageBitmap(blob);
-    const canvas = new OffscreenCanvas(cropRect.width, cropRect.height);
+    // Clamp to the captured bitmap — a rect drawn near the viewport edge (or with
+    // rounding drift) must not sample outside the image, which yields blank pixels
+    const cx = Math.max(0, Math.min(cropRect.x, bitmap.width - 1));
+    const cy = Math.max(0, Math.min(cropRect.y, bitmap.height - 1));
+    const cw = Math.max(1, Math.min(cropRect.width, bitmap.width - cx));
+    const ch = Math.max(1, Math.min(cropRect.height, bitmap.height - cy));
+    const canvas = new OffscreenCanvas(cw, ch);
     const ctx = canvas.getContext('2d')!;
-    ctx.drawImage(bitmap, cropRect.x, cropRect.y, cropRect.width, cropRect.height, 0, 0, cropRect.width, cropRect.height);
+    ctx.drawImage(bitmap, cx, cy, cw, ch, 0, 0, cw, ch);
     bitmap.close();
     const croppedBlob = await canvas.convertToBlob({ type: 'image/png' });
     const arrayBuf = await croppedBlob.arrayBuffer();
@@ -680,6 +720,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
       world: 'MAIN',
       files: ['widget-bundle.js'],
     });
+    await hydrateWidget(tabId);
     console.log(`[collab] Widget re-injected into tab ${tabId}`);
   } catch (err) {
     console.error(`[collab] Failed to re-inject widget into tab ${tabId}:`, err);
@@ -818,6 +859,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'dc-relay-message') {
     const data: any = { text: msg.text };
     if (msg.selections) data.selections = msg.selections;
+    if (msg.imageData) {
+      data.imageData = msg.imageData;
+      data.mimeType = msg.mimeType || 'image/png';
+    }
     const payload = JSON.stringify({ type: 'event', eventType: 'message', data });
 
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -845,6 +890,25 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     // Chat message from a widget — store and broadcast to other tabs
     const senderTabId = sender?.tab?.id;
     addToChatHistory({ text: msg.text, role: msg.role, time: msg.time || Date.now() }, senderTabId);
+    sendResponse({ ok: true });
+    return;
+  }
+
+  if (msg.type === 'dc-voice-active') {
+    // A tab claimed the mic — release it everywhere else (Chrome allows one
+    // speech-recognition session per browser; competing tabs abort each other)
+    const claimingTabId = sender?.tab?.id;
+    for (const tabId of managedTabs) {
+      if (tabId === claimingTabId) continue;
+      chrome.scripting.executeScript({
+        target: { tabId },
+        world: 'MAIN',
+        func: () => {
+          const dc = (window as any).__dc;
+          if (dc?.voice?.release) dc.voice.release();
+        },
+      }).catch(() => { /* tab closed or restricted — nothing to release */ });
+    }
     sendResponse({ ok: true });
     return;
   }
@@ -888,21 +952,26 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
         // If clip coordinates provided, crop using OffscreenCanvas
         if (opts.x !== undefined && opts.w > 0 && opts.h > 0) {
-          // Get devicePixelRatio from the tab
-          const dprResults = await chrome.scripting.executeScript({
+          // Rects arrive in page coordinates but captureVisibleTab only captures
+          // the viewport — translate by scroll offset before cropping
+          const metricsResults = await chrome.scripting.executeScript({
             target: { tabId: tab.id },
-            func: () => window.devicePixelRatio || 1,
+            func: () => ({
+              dpr: window.devicePixelRatio || 1,
+              sx: window.scrollX || 0,
+              sy: window.scrollY || 0,
+            }),
           });
-          const dpr = dprResults?.[0]?.result || 1;
+          const { dpr = 1, sx = 0, sy = 0 } = metricsResults?.[0]?.result || {};
 
           const response = await fetch(dataUrl);
           const blob = await response.blob();
           const bitmap = await createImageBitmap(blob);
 
-          const cx = Math.round(opts.x * dpr);
-          const cy = Math.round(opts.y * dpr);
-          const cw = Math.round(opts.w * dpr);
-          const ch = Math.round(opts.h * dpr);
+          const cx = Math.max(0, Math.min(Math.round((opts.x - sx) * dpr), bitmap.width - 1));
+          const cy = Math.max(0, Math.min(Math.round((opts.y - sy) * dpr), bitmap.height - 1));
+          const cw = Math.max(1, Math.min(Math.round(opts.w * dpr), bitmap.width - cx));
+          const ch = Math.max(1, Math.min(Math.round(opts.h * dpr), bitmap.height - cy));
 
           const canvas = new OffscreenCanvas(cw, ch);
           const ctx = canvas.getContext('2d')!;
@@ -986,6 +1055,10 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       // Send a ping to keep the connection alive
       ws.send(JSON.stringify({ type: 'ping' }));
+    } else if (!userDisconnected && (!ws || ws.readyState === WebSocket.CLOSED)) {
+      // Connection dropped (server restart, SW killed mid-session) — reconnect
+      console.log('[collab] Keepalive: WS down, attempting reconnect...');
+      autoConnect();
     }
   }
 });

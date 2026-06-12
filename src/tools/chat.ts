@@ -35,10 +35,17 @@ export function registerChatTool(server: McpServer): void {
     async ({ message, waitForReply, timeout }) => {
       const t = getTransport();
 
-      // Send the AI message
-      await t.evalWidget((msg: string) => {
-        window.__dc.api.say(msg);
-      }, message);
+      // Send the AI message. Extension mode uses a structured command that the
+      // service worker fans out to every widget tab with executeScript({func}) —
+      // immune to page CSP, which blocks the eval-based evalWidget path on
+      // strict sites (and reaches ALL tabs, not just the active one).
+      if (t.getMode() === 'extension' && typeof (t as any).deliverChat === 'function') {
+        await (t as any).deliverChat(message);
+      } else {
+        await t.evalWidget((msg: string) => {
+          window.__dc.api.say(msg);
+        }, message);
+      }
 
       if (!waitForReply) {
         const reminder = isListenerAlive()

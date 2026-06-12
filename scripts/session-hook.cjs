@@ -16,8 +16,18 @@ process.stdin.on('end', () => {
     const data = JSON.parse(input);
     const tool = data.tool_name || '';
 
-    const listenerPath = require('path').join(__dirname, 'listener.cjs');
+    const path = require('path');
+    const fs = require('fs');
+    const OWNER_FILE = path.join(__dirname, '..', '.owner-session');
+
+    const listenerPath = path.join(__dirname, 'listener.cjs');
     if (tool.includes('collab_browse')) {
+      // Claim collab ownership for this session — cancel/stop hooks in other
+      // Claude sessions check this file and stay silent (they'd otherwise
+      // deliver collab messages to every running terminal)
+      if (data.session_id) {
+        try { fs.writeFileSync(OWNER_FILE, String(data.session_id)); } catch {}
+      }
       console.log(
         '[COLLAB-SETUP] CRITICAL — You MUST do these steps NOW, before anything else:\n' +
         '\n' +
@@ -37,6 +47,7 @@ process.stdin.on('end', () => {
     }
 
     if (tool.includes('collab_close')) {
+      try { fs.unlinkSync(OWNER_FILE); } catch {}
       console.log(
         '[COLLAB-CLEANUP] Session ended. Do NOT spawn a new listener agent.'
       );

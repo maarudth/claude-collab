@@ -56,11 +56,16 @@
   });
 
   // Relay functions — use private MessageChannel when available, fall back to window globals
-  function relayMessage(text, selections) {
+  function relayMessage(text, selections, imageData, mimeType) {
     if (_relayPort) {
-      _relayPort.postMessage({ action: 'message', text: text, selections: selections || null });
+      _relayPort.postMessage({
+        action: 'message', text: text, selections: selections || null,
+        imageData: imageData || null, mimeType: mimeType || null
+      });
       return Promise.resolve();
     }
+    // Playwright binding fallback (tabs/single mode) — text only; attachments
+    // are read from widget state via evalWidget there
     if (window.__dcRelayMessage) return window.__dcRelayMessage(text, selections ? JSON.stringify(selections) : null);
     return Promise.reject('no relay');
   }
@@ -289,7 +294,13 @@
   };
 
   // ==================== PERSISTENCE ====================
+  // Extension mode: chat history is owned by the service worker (single source
+  // of truth) and pushed via api.hydrate — per-tab sessionStorage copies are
+  // what caused cross-tab inconsistency, so persistence is disabled there
+  const IS_EXTENSION = !!(window.name && window.name.startsWith('dc-frame-extension'));
+
   function persistMessages() {
+    if (IS_EXTENSION) return;
     try {
       const data = state.messages.map(m => ({
         text: m.imageData ? (m.text || '\ud83d\udcf8 Captured frame') : m.text,
@@ -1221,6 +1232,10 @@
     const text = input.value.trim();
     if (!text && !pendingAttachment) return;
     const hadImage = !!(pendingAttachment && (pendingAttachment.imageData || pendingAttachment.captureRect));
+    // Capture attachment data before pendingAttachment is cleared below — the
+    // relay carries it to the server store (extension mode single source of truth)
+    const relayImage = pendingAttachment && pendingAttachment.imageData ? pendingAttachment.imageData : null;
+    const relayMime = pendingAttachment && pendingAttachment.mimeType ? pendingAttachment.mimeType : null;
     if (pendingAttachment) {
       if (pendingAttachment.captureRect) {
         // Rect-based capture — store rect in message for Playwright to fulfill
@@ -1257,7 +1272,7 @@
         return out;
       });
     }
-    relayMessage(msgText, selections.length > 0 ? selections : null).catch(() => { /* bridge may not be available */ });
+    relayMessage(msgText, selections.length > 0 ? selections : null, relayImage, relayMime).catch(() => { /* bridge may not be available */ });
     input.value = '';
     input.style.height = 'auto';
     try { sessionStorage.removeItem(INPUT_KEY); } catch {}
@@ -1456,7 +1471,8 @@
   }
 
   // ---- Restore persisted messages ----
-  const persisted = loadPersistedMessages();
+  // (Skipped in extension mode — the service worker hydrates from its history)
+  const persisted = IS_EXTENSION ? null : loadPersistedMessages();
   if (persisted && persisted.length > 0) {
     persisted.forEach(m => {
       state.messages.push({ text: m.text, type: m.type, time: m.time || Date.now() });
@@ -1705,6 +1721,28 @@
     /** Add a message to the chat (used by cross-tab sync and hydration) */
     addMessage(text, type) {
       addMessage(text, type);
+    },
+
+    /** Replace chat state with service-worker history (extension mode).
+     *  All hydrated messages are marked read — they were already delivered. */
+    hydrate(history) {
+      if (!Array.isArray(history) || history.length === 0) return;
+      state._syncing = true;
+      try {
+        state.messages = [];
+        msgContainer.querySelectorAll('.dc-msg').forEach(function (el) { el.remove(); });
+        history.forEach(function (m) {
+          state.messages.push({ text: m.text, type: m.role || m.type, time: m.time || Date.now() });
+          var type = m.role || m.type;
+          if (type === 'system') return; // don't re-render status noise
+          var el = renderMsgEl(m.text, type, m.time);
+          msgContainer.appendChild(el);
+        });
+        state.lastReadIndex = state.messages.length;
+        msgContainer.scrollTop = msgContainer.scrollHeight;
+      } finally {
+        state._syncing = false;
+      }
     },
 
     /** Read unread user messages since last check.

@@ -30,6 +30,15 @@ for (const file of [NOTIFY_PORT_FILE, WS_PORT_FILE]) {
 
 if (targets.length === 0) process.exit(0); // No collab session
 
+// Only the collab-owning session may set the idle flag — a different session
+// going idle must not trigger message delivery into this one
+const OWNER_FILE = path.join(PROJECT_ROOT, '.owner-session');
+try {
+  const owner = fs.readFileSync(OWNER_FILE, 'utf-8').trim();
+  const sessionId = String((JSON.parse(fs.readFileSync(0, 'utf-8')) || {}).session_id || '');
+  if (owner && sessionId && owner !== sessionId) process.exit(0);
+} catch {} // no owner file or unparsable stdin — proceed (pre-claim sessions)
+
 function tryPort(idx) {
   if (idx >= targets.length) {
     process.exit(0); // All ports failed — nothing to do
