@@ -26,9 +26,10 @@ function dcContentHandler(event: MessageEvent) {
   }
 
   const { action, text, selections, imageData, mimeType } = event.data;
-  // file:// pages report origin as the literal string "null" — invalid as a
-  // postMessage target (throws). Use '*' there; see relay-inject.ts for why.
-  const senderOrigin = event.origin && event.origin !== 'null' ? event.origin : '*';
+  // Non-http(s) pages report origins that fail as postMessage targets:
+  // "file://" is silently dropped, "null" throws. Use '*' for those;
+  // see relay-inject.ts for why this is safe.
+  const senderOrigin = /^https?:/.test(event.origin || '') ? event.origin : '*';
   console.log('[dc-content] Relay event:', action, text?.slice(0, 50));
 
   if (action === 'message' && text) {

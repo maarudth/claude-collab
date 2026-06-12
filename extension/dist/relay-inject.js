@@ -46,7 +46,7 @@
     };
     onPort1Message2 = onPort1Message, makeChannel2 = makeChannel;
     window.__dcRelayInjected = true;
-    const origin = window.location.origin && window.location.origin !== "null" ? window.location.origin : "*";
+    const origin = /^https?:/.test(window.location.origin) ? window.location.origin : "*";
     let activePort1 = null;
     let portDelivered = false;
     const ackHandler = (ev) => {

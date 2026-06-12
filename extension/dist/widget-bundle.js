@@ -54,9 +54,9 @@
         }
       };
       // Acknowledge receipt so relay-inject stops retrying.
-      // file:// pages report origin as the string "null" — invalid postMessage
-      // target (throws, ack lost, relay retries forever). Use '*' there.
-      window.postMessage({ __dcRelayAck: true }, e.origin && e.origin !== 'null' ? e.origin : '*');
+      // Non-http(s) origins fail as postMessage targets ("file://" is silently
+      // dropped, "null" throws) — ack lost, relay retries forever. Use '*' there.
+      window.postMessage({ __dcRelayAck: true }, /^https?:/.test(e.origin || '') ? e.origin : '*');
     }
   });
 
@@ -2026,6 +2026,16 @@
         return;
       }
 
+      // "aborted" needs care: our own aborts (stopListening, TTS mute, retry)
+      // null or replace `recognition` first, so rec !== recognition there.
+      // An abort on the CURRENT instance means another tab took the browser-wide
+      // speech session — restarting would steal it back and the tabs would
+      // fight forever (with a permission prompt each round). Release instead.
+      if (e.error === 'aborted') {
+        if (rec === recognition && voice.active) voice.release();
+        return;
+      }
+
       // Auto-restart on transient errors — clear existing timeout first to prevent leaks
       if (voice.active && !voice.speaking) {
         if (restartTimeout) { clearTimeout(restartTimeout); restartTimeout = null; }
@@ -2256,8 +2266,10 @@
       // browser, so other tabs' widgets must release theirs or they steal
       // the session back and forth ("aborted" loops, silent transcripts)
       try {
+        // Non-http(s) origins fail as postMessage targets ("file://" silently
+        // drops, "null" throws) — claim lost, other tabs never release, mic fight.
         window.postMessage({ __dcRelay: true, action: 'voice-active' },
-          window.location.origin !== 'null' ? window.location.origin : '*');
+          /^https?:/.test(window.location.origin) ? window.location.origin : '*');
       } catch (_) {}
       startListening();
       window.__dc.api.system('Voice mode ON — speak naturally');

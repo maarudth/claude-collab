@@ -17,13 +17,13 @@
 if (!(window as any).__dcRelayInjected) {
   (window as any).__dcRelayInjected = true;
 
-  // file:// pages have the literal origin "null" — an invalid postMessage
-  // target that throws on every call. Fall back to '*' there: same-window
-  // postMessage is readable by page scripts regardless of targetOrigin, and
-  // channel security comes from the MessagePort transfer, not the origin.
-  const origin = window.location.origin && window.location.origin !== 'null'
-    ? window.location.origin
-    : '*';
+  // Non-http(s) pages have unusable origins as postMessage targets: file://
+  // pages report the literal string "file://" (silently dropped — no error),
+  // sandboxed/about: pages report "null" (throws). Only trust http(s) origins;
+  // fall back to '*' otherwise: same-window postMessage is readable by page
+  // scripts regardless of targetOrigin, and channel security comes from the
+  // MessagePort transfer, not the origin.
+  const origin = /^https?:/.test(window.location.origin) ? window.location.origin : '*';
 
   // The active channel — may be replaced during retry handshake
   let activePort1: MessagePort | null = null;

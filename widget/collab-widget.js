@@ -51,9 +51,9 @@
         }
       };
       // Acknowledge receipt so relay-inject stops retrying.
-      // file:// pages report origin as the string "null" — invalid postMessage
-      // target (throws, ack lost, relay retries forever). Use '*' there.
-      window.postMessage({ __dcRelayAck: true }, e.origin && e.origin !== 'null' ? e.origin : '*');
+      // Non-http(s) origins fail as postMessage targets ("file://" is silently
+      // dropped, "null" throws) — ack lost, relay retries forever. Use '*' there.
+      window.postMessage({ __dcRelayAck: true }, /^https?:/.test(e.origin || '') ? e.origin : '*');
     }
   });
 
