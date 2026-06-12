@@ -123,6 +123,7 @@ The extension requests broad permissions (`<all_urls>`, `tabs`, `scripting`, `de
 - **Cancel** stops Claude after the current step, not mid-execution
 - **Wireframe tool** is not yet supported in extension mode
 - **Extension screenshots** capture the viewport only (no element/full-page capture yet)
+- **Strict-CSP sites** (e.g. linear.app) block scan/evaluate/act in extension mode — the page's Content Security Policy forbids script evaluation. Screenshots, tab control, and chat still work there
 - **Voice output** uses Microsoft Edge TTS and needs a microphone for input
 
 ## Development

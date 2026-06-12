@@ -182,6 +182,11 @@
     if (results && results[0]) {
       const result = results[0].result;
       if (result && typeof result === "object" && "__error" in result) {
+        if (/unsafe-eval|Content Security Policy/i.test(result.__error)) {
+          throw new Error(
+            "This site's Content Security Policy blocks script evaluation in extension mode \u2014 scan/evaluate/act are unavailable on this tab. Screenshots, tab switching, and the chat widget still work. Known limitation; see README."
+          );
+        }
         throw new Error(result.__error);
       }
       if (result && typeof result === "object" && "__truncated" in result) {

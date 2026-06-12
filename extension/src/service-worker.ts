@@ -243,6 +243,15 @@ async function handleEval(msg: { type: string; code: string; tabId?: number }): 
   if (results && results[0]) {
     const result = results[0].result;
     if (result && typeof result === 'object' && '__error' in result) {
+      // Strict page CSP (no 'unsafe-eval') blocks the indirect eval in the MAIN
+      // world — executeScript itself is exempt, the eval inside it is not
+      if (/unsafe-eval|Content Security Policy/i.test(result.__error)) {
+        throw new Error(
+          'This site\'s Content Security Policy blocks script evaluation in extension mode — ' +
+          'scan/evaluate/act are unavailable on this tab. Screenshots, tab switching, and the ' +
+          'chat widget still work. Known limitation; see README.'
+        );
+      }
       throw new Error(result.__error);
     }
     if (result && typeof result === 'object' && '__truncated' in result) {

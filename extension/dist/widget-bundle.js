@@ -1506,14 +1506,18 @@
   } catch {}
 
   // ---- Cross-tab sync via localStorage ----
+  // Extension mode: the service worker owns cross-tab sync. localStorage
+  // broadcast only reaches same-origin tabs, and a tab ingesting it re-announces
+  // to the service worker — two same-origin tabs form a duplication loop.
   function broadcast(msg) {
+    if (IS_EXTENSION) return;
     tryLocalStorage(() => {
       const data = JSON.stringify({ text: msg.text, type: msg.type, time: Date.now(), from: TAB_ID });
       localStorage.setItem('dc-broadcast', data);
     });
   }
 
-  tryLocalStorage(() => {
+  if (!IS_EXTENSION) tryLocalStorage(() => {
     window.addEventListener('storage', (e) => {
       if (e.key !== 'dc-broadcast' || !e.newValue) return;
       try {
