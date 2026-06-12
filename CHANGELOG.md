@@ -5,6 +5,18 @@
 ### New: join the user's current tab
 - In extension mode, `collab_browse` with no url attaches to the page the user is already on — "use collab to join me here". Attached tabs are treated as user-owned: `collab_close` removes the widget but never closes the tab.
 
+### Reliability: message delivery rebuilt (found in live testing)
+Every fix below was root-caused and re-verified in live sessions — a 9-point delivery checklist passes end to end.
+
+- **No more duplicate messages.** A `collab_browse` that timed out waiting for the extension token left an orphaned transport whose reconnect hook double-handled every message. The transport is now a reused singleton — one instance, one handler.
+- **file:// pages work.** Chrome reports `location.origin` as the literal string `file://` there, and `postMessage` to that target is *silently dropped* — the relay handshake never completed, so every message from a local file vanished. Only http(s) origins are trusted as postMessage targets now (else `'*'`), across the relay, content script, widget ack, and voice broadcast.
+- **Voice messages actually send.** The voice module posted through a Playwright-only binding that extension mode stubbed as a no-op; it now routes through the shared widget relay in both modes.
+- **Selections attach once.** Click-selected elements used to re-attach to every later message; now they attach to the next send only, and re-attach only if you modify them again.
+- **Mic handoff between tabs.** Starting voice in a second tab no longer triggers an infinite cross-tab fight over Chrome's single speech-recognition session (with permission-prompt spam); the losing tab releases cleanly.
+- **One terminal owns the session.** `collab_browse` claims ownership, so a second Claude Code terminal on the same machine can no longer steal your messages mid-task. Ownership transfers when another terminal deliberately joins.
+- **Claude can't go idle deaf.** The stop hook now refuses to let the session go idle while the background listener is dead, forcing a restart first — message delivery no longer depends on the model remembering anything.
+- Failed deliveries surface as a visible "⚠ Message not delivered" line in the widget instead of being swallowed.
+
 ### Renamed: `design_*` → `collab_*`
 - All 26 tools renamed (`design_scan` → `collab_scan`, `design_chat` → `collab_chat`, …) and the recommended MCP registration name is now `collab` (was `design-collab`). The old names were a remnant of the original design-tool framing. **Breaking** if you installed 0.7.0: re-register the server (`claude mcp remove design-collab`, then the new `claude mcp add collab …` from the README) and re-run `npm run setup`.
 - Hook matchers are now unanchored tool-name suffixes (`collab_browse|collab_close`), so they work regardless of what name you register the server under.
