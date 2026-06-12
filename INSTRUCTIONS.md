@@ -15,7 +15,7 @@ You share a live browser with the user. They see every action in real time — y
 - "Look at this" → `collab_preview`. "Change the page" → `collab_evaluate`.
 
 ## Modes
-tabs (default, iframe multi-tab) · single (direct injection; for iframe-blocking sites) · extension (user's real Chrome; logged-in sites).
+tabs (default, iframe multi-tab) · single (direct injection; for iframe-blocking sites) · extension (user's real Chrome; omit url in `collab_browse` to join their current tab).
 
 ## Rhythm
 Flow freely through technical steps, but present user-facing results (previews, options, audits) and wait for feedback. Confirm scope before multi-step work. Show work incrementally.

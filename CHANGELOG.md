@@ -2,6 +2,9 @@
 
 ## 0.8.0 — 2026-06-12
 
+### New: join the user's current tab
+- In extension mode, `collab_browse` with no url attaches to the page the user is already on — "use collab to join me here". Attached tabs are treated as user-owned: `collab_close` removes the widget but never closes the tab.
+
 ### Renamed: `design_*` → `collab_*`
 - All 26 tools renamed (`design_scan` → `collab_scan`, `design_chat` → `collab_chat`, …) and the recommended MCP registration name is now `collab` (was `design-collab`). The old names were a remnant of the original design-tool framing. **Breaking** if you installed 0.7.0: re-register the server (`claude mcp remove design-collab`, then the new `claude mcp add collab …` from the README) and re-run `npm run setup`.
 - Hook matchers are now unanchored tool-name suffixes (`collab_browse|collab_close`), so they work regardless of what name you register the server under.

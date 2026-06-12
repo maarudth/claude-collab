@@ -196,6 +196,19 @@
         }
         return { tabId: tab.id };
       }
+      case "attach": {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab?.id) throw new Error("No active tab to attach to");
+        const url = tab.url || "";
+        if (!/^https?:/i.test(url)) {
+          throw new Error(
+            `Cannot attach to the current tab (${url.split(":")[0] || "unknown"}: page). Ask the user to switch to a normal webpage, then attach again.`
+          );
+        }
+        managedTabs.add(tab.id);
+        followedTabs.add(tab.id);
+        return { tabId: tab.id, url, title: tab.title || "" };
+      }
       case "navigate": {
         if (!msg.tabId) throw new Error("tabId required");
         await chrome.tabs.update(msg.tabId, { url: msg.url });

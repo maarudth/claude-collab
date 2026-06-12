@@ -172,6 +172,24 @@ export class ExtensionTransport implements DesignTransport {
     return { tabId };
   }
 
+  /** Join the user's currently active tab instead of opening a new one. */
+  async attach(): Promise<{ tabId: number; url: string }> {
+    const result = await this.send({
+      type: 'tab-action',
+      action: 'attach',
+    });
+    const tabId = result.tabId;
+    this.managedTabs.add(tabId);
+    this.activeTabId = tabId;
+
+    await this.send({
+      type: 'inject-widget',
+      tabId,
+    });
+
+    return { tabId, url: result.url };
+  }
+
   async navigate(url: string): Promise<string> {
     const result = await this.send({
       type: 'tab-action',

@@ -67,6 +67,8 @@ Use collab to open example.com
 
 Modes: `Use collab in single mode to open …` / `Use collab in extension mode to open …`
 
+Or, in extension mode, skip the URL entirely — **"Use collab to join me here"** attaches Claude to whatever page you're already on.
+
 The browser opens with a chat widget in the page — from there, talk to Claude in the widget, not the terminal.
 
 ### Example sessions
@@ -74,8 +76,8 @@ The browser opens with a chat widget in the page — from there, talk to Claude 
 **Point-and-edit on your app:**
 > "Use collab in single mode to open localhost:3000." Then click the hero section and type: "this — make it tighter and darker."
 
-**Work in a logged-in admin:**
-> "Use collab in extension mode to open dashboard.example.com. Fill the new product form from this spreadsheet."
+**Join the page you're on:**
+> You're already in your CMS admin. "Use collab in extension mode to join me here. Fill the new product form from this spreadsheet."
 
 **Design review:**
 > "Use collab to open my-site.com. Run an accessibility audit and show me what you find."

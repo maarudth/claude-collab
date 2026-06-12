@@ -31,12 +31,20 @@ ${PLAYBOOK_PATH}
 export function registerBrowseTool(server: McpServer): void {
   server.tool(
     'collab_browse',
-    'Open a URL in a new tab. Each call creates a new tab — use for browsing references while keeping other pages open. The chat widget persists across all tabs.',
+    'Open a URL in a new tab, or — in extension mode with no url — join the page the user is currently on. Each call with a url creates a new tab; the chat widget persists across all tabs. When the user says "join me" or wants to work on their current page, use extension mode and omit url.',
     {
-      url: z.string().url().describe('The URL to navigate to'),
+      url: z.string().url().optional().describe('The URL to navigate to. Omit in extension mode to attach to the user\'s currently active tab ("join me here").'),
       mode: z.enum(['tabs', 'single', 'extension']).default('tabs').describe('Session mode: "tabs" (default) uses iframe tabs for multi-page browsing. "single" opens the page directly without iframes. "extension" uses the Chrome extension in the user\'s real browser.'),
     },
     async ({ url, mode: browseMode }) => {
+      if (!url && browseMode !== 'extension') {
+        return {
+          content: [{
+            type: 'text' as const,
+            text: 'url is required in tabs/single mode — only extension mode can join the user\'s current tab. Provide a url, or use mode: "extension".',
+          }],
+        };
+      }
       let t: DesignTransport;
 
       if (browseMode === 'extension') {
@@ -90,7 +98,23 @@ export function registerBrowseTool(server: McpServer): void {
         t = pw;
       }
 
-      const { tabId } = await t.browse(url);
+      // No url in extension mode → join the user's currently active tab
+      let tabId: number;
+      let joined = false;
+      if (!url) {
+        if (!t.attach) {
+          return {
+            content: [{
+              type: 'text' as const,
+              text: 'This transport cannot attach to the user\'s tab. Provide a url instead.',
+            }],
+          };
+        }
+        ({ tabId } = await t.attach());
+        joined = true;
+      } else {
+        ({ tabId } = await t.browse(url));
+      }
 
       // Extract page info from the target frame
       const info = await t.evalFrame(() => {
@@ -117,7 +141,7 @@ export function registerBrowseTool(server: McpServer): void {
 
       return {
         content: [
-          { type: 'text' as const, text: JSON.stringify({ ...info, tabId, mode: browseMode }, null, 2) },
+          { type: 'text' as const, text: JSON.stringify({ ...info, tabId, mode: browseMode, joined }, null, 2) },
           { type: 'text' as const, text: LISTENER_INSTRUCTIONS },
         ],
       };

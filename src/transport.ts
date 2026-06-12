@@ -45,6 +45,13 @@ export interface DesignTransport {
   /** Open a URL — creates a new tab or navigates the current one */
   browse(url: string): Promise<{ tabId: number }>;
 
+  /**
+   * Attach to the user's currently active tab instead of opening a URL.
+   * Extension mode only — Playwright transports own their browser and have
+   * no user tab to join.
+   */
+  attach?(): Promise<{ tabId: number; url: string }>;
+
   /** Navigate the active tab to a URL, returns final URL */
   navigate(url: string): Promise<string>;
 

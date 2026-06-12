@@ -66,6 +66,7 @@ Browse references in tabs → user clicks elements they like → `collab_collect
 
 ### Extension mode
 - Real Chrome tabs: no iframes, no cross-origin issues, logged-in sessions work.
+- **Join the user's current tab**: call `collab_browse` with `mode: "extension"` and NO url — it attaches to whatever page the user is on (http/https only; chrome:// and similar pages are rejected). Prefer this when the user says "join me" or is already on the page they want to work on. Attached tabs are never closed by `collab_close` — only the widget is removed.
 - Widget auto-reinjects on navigation.
 - Not yet supported: `collab_wireframe`, element/full-page screenshots (viewport only).
 - Auth: `collab_browse` returns port + token when the extension isn't connected — relay them to the user to paste into the extension popup (one-time per session). Stale tokens auto-clear.
