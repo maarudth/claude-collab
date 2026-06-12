@@ -4,7 +4,7 @@
 
 ![Chatting with Claude in the live page: it mocks up hero color options, applies the pick, and gets asked to commit it](docs/demo.gif)
 
-*One extension-mode session in a real Chrome tab — conversation, live restyle, and "commit it to code" without leaving the page. [Watch the full demo (~2.5 min)](https://github.com/maarudth/claude-collab/releases/tag/v0.8.0).*
+*One extension-mode session in a real Chrome tab — conversation, live restyle, and "commit it to code" without leaving the page.*
 
 Built as an [MCP server](https://modelcontextprotocol.io/) for Claude Code. Open source, MIT.
 
