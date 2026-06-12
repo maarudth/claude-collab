@@ -12,6 +12,7 @@ Every browser agent today is one-directional: the agent acts, you watch from a s
 - **Claude shows, instead of dumping code.** Mockups appear in a draggable in-page panel, A/B variants as clickable options that apply to the real page, collected inspiration as a moodboard.
 - **The conversation lives in the browser.** Chat widget in the page, with voice mode if you want it. You never alt-tab to a terminal mid-thought.
 - **It works on real sites, not just localhost.** Extension mode connects Claude to your actual Chrome — logged-in dashboards, CMS admin panels, staging environments, any URL.
+- **It's Claude Code, not a browser bot.** The agent in your browser has your whole dev environment behind it: it can read a file from your disk and enter it into a CMS, scrape a page and write the analysis into your repo, build a feature and click-test it — in one session. Consumer browser agents are sandboxed away from your code by design; this isn't. And because you watch every action in the page and can interrupt between steps, it's supervised automation, not a bot running loose.
 
 ## What Claude can do in the shared browser
 
