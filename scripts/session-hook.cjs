@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Session lifecycle hook — fires after design_browse and design_close.
+ * Session lifecycle hook — fires after collab_browse and collab_close.
  *
- * After design_browse: tells Claude to spawn a background listener agent.
- * After design_close: tells Claude the session ended, no new listener needed.
+ * After collab_browse: tells Claude to spawn a background listener agent.
+ * After collab_close: tells Claude the session ended, no new listener needed.
  *
  * Reads tool_name from stdin JSON (provided by Claude Code hook system).
  */
@@ -17,7 +17,7 @@ process.stdin.on('end', () => {
     const tool = data.tool_name || '';
 
     const listenerPath = require('path').join(__dirname, 'listener.cjs');
-    if (tool.includes('design_browse')) {
+    if (tool.includes('collab_browse')) {
       console.log(
         '[COLLAB-SETUP] CRITICAL — You MUST do these steps NOW, before anything else:\n' +
         '\n' +
@@ -26,17 +26,17 @@ process.stdin.on('end', () => {
         '  Copy this command EXACTLY — do NOT change the path:\n' +
         '  node "' + listenerPath + '"\n' +
         '\n' +
-        'STEP 2: Send your first message using design_chat with waitForReply: false.\n' +
+        'STEP 2: Send your first message using collab_chat with waitForReply: false.\n' +
         '\n' +
         'RULES:\n' +
         '- NEVER use waitForReply: true — it blocks hook delivery and causes message loss.\n' +
-        '- The listener exits after delivering a message. You MUST start a new one immediately after responding via design_chat.\n' +
+        '- The listener exits after delivering a message. You MUST start a new one immediately after responding via collab_chat.\n' +
         '- If you forget, the [COLLAB-LISTENER-DOWN] reminder will appear after your next tool call — obey it immediately.\n' +
-        '- When you receive a [COLLAB] message, respond via design_chat, THEN restart the listener.'
+        '- When you receive a [COLLAB] message, respond via collab_chat, THEN restart the listener.'
       );
     }
 
-    if (tool.includes('design_close')) {
+    if (tool.includes('collab_close')) {
       console.log(
         '[COLLAB-CLEANUP] Session ended. Do NOT spawn a new listener agent.'
       );

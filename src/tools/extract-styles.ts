@@ -4,7 +4,7 @@ import { getTransport } from '../transport.js';
 
 export function registerExtractStylesTool(server: McpServer): void {
   server.tool(
-    'design_extract_styles',
+    'collab_extract_styles',
     'Extract computed styles and design tokens from an element in the target site. Returns colors, typography, spacing, borders, shadows — everything needed to replicate the element\'s appearance.',
     {
       selector: z.string().max(500).describe('CSS selector for the element to extract styles from'),

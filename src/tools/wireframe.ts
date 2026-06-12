@@ -6,8 +6,8 @@ import { getWidgetScript, getVoiceModuleScript, getInspectorScript, getIframeBri
 
 export function registerWireframeTool(server: McpServer): void {
   server.tool(
-    'design_wireframe',
-    'Open a blank wireframing canvas with optional grid overlay. Use design_evaluate to add sections, the inspector to refine.',
+    'collab_wireframe',
+    'Open a blank wireframing canvas with optional grid overlay. Use collab_evaluate to add sections, the inspector to refine.',
     {
       html: z.string().max(500000).optional().describe('Initial wireframe HTML to render'),
       grid: z.boolean().default(true).describe('Show alignment grid'),
@@ -93,7 +93,7 @@ export function registerWireframeTool(server: McpServer): void {
 </style>
 </head>
 <body>
-${html || '<!-- Empty wireframe canvas. Use design_evaluate to add content. -->'}
+${html || '<!-- Empty wireframe canvas. Use collab_evaluate to add content. -->'}
 </body>
 </html>`;
 
@@ -149,7 +149,7 @@ ${html || '<!-- Empty wireframe canvas. Use design_evaluate to add content. -->'
             canvasReady: true,
             grid,
             gridSize,
-            hint: 'Wireframe canvas ready. Use design_evaluate to inject HTML sections. Inspector available for editing. Utility classes: .wf-section, .wf-text, .wf-box, .wf-img, .wf-btn, .wf-nav, .wf-grid, .wf-flex',
+            hint: 'Wireframe canvas ready. Use collab_evaluate to inject HTML sections. Inspector available for editing. Utility classes: .wf-section, .wf-text, .wf-box, .wf-img, .wf-btn, .wf-nav, .wf-grid, .wf-flex',
           }),
         }],
       };

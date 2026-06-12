@@ -4,7 +4,7 @@ import { getTransport } from '../transport.js';
 
 export function registerEvaluateTool(server: McpServer): void {
   server.tool(
-    'design_evaluate',
+    'collab_evaluate',
     'Execute arbitrary JavaScript in the target site\'s iframe. Use for DOM inspection, style queries, design token extraction, or any custom page interaction. The code runs in the iframe context (target site), not the parent frame.',
     {
       expression: z.string().max(500000).describe('JavaScript expression to evaluate in the target iframe. Must be a valid expression that returns a serializable value.'),

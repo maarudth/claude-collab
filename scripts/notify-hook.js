@@ -2,7 +2,7 @@
 /**
  * Claude Code PermissionRequest hook script.
  * Reads the notification port from .notify-port and POSTs
- * the permission request payload to the design-collab MCP server,
+ * the permission request payload to the collab MCP server,
  * which then pushes a notification to the collab browser widget.
  *
  * Receives the permission request JSON on stdin.

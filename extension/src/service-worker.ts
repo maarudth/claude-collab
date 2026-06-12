@@ -1,5 +1,5 @@
 /**
- * Design Collab Extension — Service Worker
+ * Claude Collab Extension — Service Worker
  *
  * Connects to the MCP server via WebSocket, routes commands
  * to content scripts, and manages tab lifecycle.
@@ -81,57 +81,57 @@ function connect(port: number): void {
   }
 
   wsPort = port;
-  console.log(`[design-collab] Connecting to ws://127.0.0.1:${port}/ext`);
+  console.log(`[collab] Connecting to ws://127.0.0.1:${port}/ext`);
 
   // Token is sent in the first message, NOT in the URL (avoids token leaking in logs)
   ws = new WebSocket(`ws://127.0.0.1:${port}/ext`);
 
   ws.onopen = () => {
-    console.log('[design-collab] Connected to MCP server, authenticating...');
+    console.log('[collab] Connected to MCP server, authenticating...');
     ws!.send(JSON.stringify({ type: 'connected', version: '0.1.0', token: wsToken }));
   };
 
   ws.onmessage = async (event) => {
-    console.log('[design-collab] WS message received:', typeof event.data, String(event.data).slice(0, 200));
+    console.log('[collab] WS message received:', typeof event.data, String(event.data).slice(0, 200));
     try {
       const msg = JSON.parse(event.data as string);
-      console.log('[design-collab] Parsed command:', msg.type, msg.id);
+      console.log('[collab] Parsed command:', msg.type, msg.id);
       const result = await handleCommand(msg);
-      console.log('[design-collab] Command result:', msg.type, JSON.stringify(result).slice(0, 200));
+      console.log('[collab] Command result:', msg.type, JSON.stringify(result).slice(0, 200));
       if (msg.id && ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ id: msg.id, type: 'result', data: result }));
-        console.log('[design-collab] Response sent for:', msg.id);
+        console.log('[collab] Response sent for:', msg.id);
       } else {
-        console.warn('[design-collab] Cannot send response — ws closed or no id', msg.id, ws?.readyState);
+        console.warn('[collab] Cannot send response — ws closed or no id', msg.id, ws?.readyState);
       }
     } catch (err: any) {
-      console.error('[design-collab] Command error:', err);
+      console.error('[collab] Command error:', err);
       try {
         const msg = JSON.parse(event.data as string);
         if (msg.id && ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ id: msg.id, type: 'error', message: sanitizeError(err.message || String(err)) }));
         }
       } catch (innerErr) {
-        console.error('[design-collab] Failed to send error response:', innerErr);
+        console.error('[collab] Failed to send error response:', innerErr);
       }
     }
   };
 
   ws.onclose = () => {
-    console.log('[design-collab] Disconnected from MCP server');
+    console.log('[collab] Disconnected from MCP server');
     ws = null;
     if (userDisconnected) return; // user chose to disconnect — stay disconnected
     // Auto-reconnect: scan the port range after 3 seconds
     setTimeout(() => {
       if (!ws && !userDisconnected) {
-        console.log('[design-collab] Attempting reconnect...');
+        console.log('[collab] Attempting reconnect...');
         autoConnect();
       }
     }, 3000);
   };
 
   ws.onerror = (err) => {
-    console.error('[design-collab] WebSocket error:', err);
+    console.error('[collab] WebSocket error:', err);
   };
 }
 
@@ -170,7 +170,7 @@ async function removeAllWidgets(): Promise<void> {
     followedTabs.delete(tabId);
   }
   hiddenTabs.clear();
-  console.log('[design-collab] Removed widgets from all tabs');
+  console.log('[collab] Removed widgets from all tabs');
 }
 
 // ==================== Command Handler ====================
@@ -310,7 +310,7 @@ async function handleTabAction(msg: any): Promise<any> {
 // ==================== Session Cleanup ====================
 
 async function handleCleanup(): Promise<any> {
-  console.log('[design-collab] Cleanup: removing widgets from followed tabs, closing created tabs');
+  console.log('[collab] Cleanup: removing widgets from followed tabs, closing created tabs');
 
   // 1. Remove widgets from followed tabs (user's own tabs — don't close them)
   await removeFollowedWidgets();
@@ -544,7 +544,7 @@ async function removeFollowedWidgets(): Promise<void> {
       });
       managedTabs.delete(tabId);
       followedTabs.delete(tabId);
-      console.log(`[design-collab] Removed widget from followed tab ${tabId}`);
+      console.log(`[collab] Removed widget from followed tab ${tabId}`);
     } catch (err) {
       // Tab may have been closed
       managedTabs.delete(tabId);
@@ -580,11 +580,11 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 
     // If already managed, just update active — no need to re-inject
     if (managedTabs.has(tabId)) {
-      console.log(`[design-collab] Follow-tabs: switched to managed tab ${tabId}`);
+      console.log(`[collab] Follow-tabs: switched to managed tab ${tabId}`);
       return;
     }
 
-    console.log(`[design-collab] Follow-tabs: injecting widget into tab ${tabId} (${tab.url?.slice(0, 60)})`);
+    console.log(`[collab] Follow-tabs: injecting widget into tab ${tabId} (${tab.url?.slice(0, 60)})`);
     managedTabs.add(tabId);
     followedTabs.add(tabId);
 
@@ -633,9 +633,9 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       });
     }
 
-    console.log(`[design-collab] Follow-tabs: widget injected into tab ${tabId}`);
+    console.log(`[collab] Follow-tabs: widget injected into tab ${tabId}`);
   } catch (err) {
-    console.error(`[design-collab] Follow-tabs: failed to inject into tab ${tabId}:`, err);
+    console.error(`[collab] Follow-tabs: failed to inject into tab ${tabId}:`, err);
     managedTabs.delete(tabId);
     followedTabs.delete(tabId);
   }
@@ -646,7 +646,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   if (!managedTabs.has(tabId)) return;
   if (changeInfo.status !== 'complete') return;
 
-  console.log(`[design-collab] Tab ${tabId} navigated, re-injecting widget...`);
+  console.log(`[collab] Tab ${tabId} navigated, re-injecting widget...`);
   try {
     // Fresh content script for relay chain (manifest one may be stale)
     await chrome.scripting.executeScript({
@@ -663,9 +663,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
       world: 'MAIN',
       files: ['widget-bundle.js'],
     });
-    console.log(`[design-collab] Widget re-injected into tab ${tabId}`);
+    console.log(`[collab] Widget re-injected into tab ${tabId}`);
   } catch (err) {
-    console.error(`[design-collab] Failed to re-inject widget into tab ${tabId}:`, err);
+    console.error(`[collab] Failed to re-inject widget into tab ${tabId}:`, err);
   }
 });
 
@@ -770,7 +770,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
         sendResponse({ ok: true, hidden: !isHidden });
       } catch (err) {
-        console.error('[design-collab] Toggle failed:', err);
+        console.error('[collab] Toggle failed:', err);
         sendResponse({ ok: false });
       }
     })();
@@ -810,13 +810,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       // WS not ready — queue the message and retry after a short delay.
       // This handles the startup race where the service worker restarts
       // and autoConnect hasn't completed yet.
-      console.warn('[design-collab] WS not open for relay message, queuing retry...');
+      console.warn('[collab] WS not open for relay message, queuing retry...');
       setTimeout(() => {
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(payload);
-          console.log('[design-collab] Queued relay message sent after retry');
+          console.log('[collab] Queued relay message sent after retry');
         } else {
-          console.error('[design-collab] Relay message DROPPED — WS still not open after retry');
+          console.error('[collab] Relay message DROPPED — WS still not open after retry');
         }
       }, 2000);
       sendResponse({ ok: false, error: 'WS not connected, message queued for retry' });
@@ -837,7 +837,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(payload);
     } else {
-      console.warn('[design-collab] WS not open for cancel relay, queuing retry...');
+      console.warn('[collab] WS not open for cancel relay, queuing retry...');
       setTimeout(() => {
         if (ws && ws.readyState === WebSocket.OPEN) ws.send(payload);
       }, 2000);
@@ -906,7 +906,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           sendResponse({ data: base64 });
         }
       } catch (err) {
-        console.error('[design-collab] Screenshot relay failed:', err);
+        console.error('[collab] Screenshot relay failed:', err);
         sendResponse({ data: null });
       }
     })();
@@ -917,7 +917,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // Auto-connect on startup: try the fixed port range (19876-19880)
 async function autoConnect(attempt = 0): Promise<void> {
   if (attempt >= MAX_PORT_ATTEMPTS) {
-    console.log('[design-collab] No MCP server found on ports ' + DEFAULT_PORT + '-' + (DEFAULT_PORT + MAX_PORT_ATTEMPTS - 1));
+    console.log('[collab] No MCP server found on ports ' + DEFAULT_PORT + '-' + (DEFAULT_PORT + MAX_PORT_ATTEMPTS - 1));
     return;
   }
 
@@ -930,12 +930,12 @@ async function autoConnect(attempt = 0): Promise<void> {
     } catch {}
   }
   if (userDisconnected) {
-    console.log('[design-collab] User disconnected — not auto-connecting');
+    console.log('[collab] User disconnected — not auto-connecting');
     return;
   }
 
   const port = DEFAULT_PORT + attempt;
-  console.log(`[design-collab] Scanning port ${port}...`);
+  console.log(`[collab] Scanning port ${port}...`);
 
   // Health check — token is NOT in /health (security). Use stored token from
   // chrome.storage (saved when user pastes it in the popup).
@@ -944,10 +944,10 @@ async function autoConnect(attempt = 0): Promise<void> {
     .then(data => {
       if (data.ok) {
         if (wsToken) {
-          console.log(`[design-collab] Found MCP server on port ${port}, connecting with stored token`);
+          console.log(`[collab] Found MCP server on port ${port}, connecting with stored token`);
           connect(port);
         } else {
-          console.log(`[design-collab] Found MCP server on port ${port}, but no auth token — paste in popup.`);
+          console.log(`[collab] Found MCP server on port ${port}, but no auth token — paste in popup.`);
         }
       } else {
         autoConnect(attempt + 1);
@@ -973,4 +973,4 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   }
 });
 
-console.log('[design-collab] Service worker loaded');
+console.log('[collab] Service worker loaded');

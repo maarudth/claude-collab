@@ -4,8 +4,8 @@ import { getTransport } from '../transport.js';
 
 export function registerNavigateTool(server: McpServer): void {
   server.tool(
-    'design_navigate',
-    'Navigate to a URL within the active tab. Lighter than design_browse — does not open a new tab or return page info.',
+    'collab_navigate',
+    'Navigate to a URL within the active tab. Lighter than collab_browse — does not open a new tab or return page info.',
     {
       url: z.string().describe('URL or path to navigate to (e.g. "/about", "https://example.com")').refine(u => {
         if (u.startsWith('/')) return true; // relative path

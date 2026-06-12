@@ -4,7 +4,7 @@ import { getTransport } from '../transport.js';
 
 export function registerOptionsTool(server: McpServer): void {
   server.tool(
-    'design_options',
+    'collab_options',
     'Present clickable design options in the preview panel. When the user clicks an option, it replaces the target element in the iframe via the bridge. Includes a revert button. Use for A/B comparisons.',
     {
       selector: z.string().describe('CSS selector for the element to replace (e.g. ".hero-title", "#logo", "nav")'),

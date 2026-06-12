@@ -4,8 +4,8 @@ import { getTransport } from '../transport.js';
 
 export function registerVisualDiffTool(server: McpServer): void {
   server.tool(
-    'design_visual_diff',
-    'Show a before/after comparison slider in the preview panel. Pass two screenshots (from design_screenshot) to compare changes.',
+    'collab_visual_diff',
+    'Show a before/after comparison slider in the preview panel. Pass two screenshots (from collab_screenshot) to compare changes.',
     {
       before: z.string().max(10000000).describe('Base64 PNG of the "before" state'),
       after: z.string().max(10000000).describe('Base64 PNG of the "after" state'),

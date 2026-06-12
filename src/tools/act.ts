@@ -7,10 +7,10 @@ import { getTransport } from '../transport.js';
 const ACT_RUNTIME = `
 // ── Validate ref map ──
 if (!window.__dcRefs) {
-  return { success: false, error: 'No scan data found. Run design_scan first.' };
+  return { success: false, error: 'No scan data found. Run collab_scan first.' };
 }
 if (window.__dcRefsUrl !== location.href) {
-  return { success: false, error: 'Page URL changed since last scan (' + window.__dcRefsUrl + ' → ' + location.href + '). Run design_scan again.' };
+  return { success: false, error: 'Page URL changed since last scan (' + window.__dcRefsUrl + ' → ' + location.href + '). Run collab_scan again.' };
 }
 var __refsAge = window.__dcRefsTimestamp ? (Date.now() - window.__dcRefsTimestamp) : 0;
 var __refsStaleWarning = __refsAge > 60000 ? ' (warning: scan data is ' + Math.round(__refsAge / 1000) + 's old — consider re-scanning if DOM has changed)' : '';
@@ -27,7 +27,7 @@ function execAction(action, ref, value) {
     return { success: false, error: 'Ref "' + ref + '" not found. Available refs: e1–e' + Object.keys(window.__dcRefs).length + '.' };
   }
   if (!document.contains(el)) {
-    return { success: false, error: 'Ref "' + ref + '" is stale (element removed from DOM). Run design_scan again.' };
+    return { success: false, error: 'Ref "' + ref + '" is stale (element removed from DOM). Run collab_scan again.' };
   }
 
   var desc = describe(el);
@@ -110,7 +110,7 @@ function execAction(action, ref, value) {
           return { success: true, action: 'select', ref: ref, element: desc, value: el.options[el.selectedIndex].textContent.trim() };
         }
         el.click();
-        return { success: true, action: 'select', ref: ref, element: desc, note: 'Clicked custom dropdown. Use design_scan to see options, then design_act click on the desired option.' };
+        return { success: true, action: 'select', ref: ref, element: desc, note: 'Clicked custom dropdown. Use collab_scan to see options, then collab_act click on the desired option.' };
       }
 
       case 'hover': {
@@ -158,8 +158,8 @@ const stepSchema = z.object({
 
 export function registerActTool(server: McpServer): void {
   server.tool(
-    'design_act',
-    'Interact with page elements using [ref=eN] indices from design_scan. Supports click, type, select, hover, focus, clear. Send a single action OR multiple steps in sequence (e.g. click a menu then click an option). Use "delay" between steps when the page needs time to react (dropdowns, animations).',
+    'collab_act',
+    'Interact with page elements using [ref=eN] indices from collab_scan. Supports click, type, select, hover, focus, clear. Send a single action OR multiple steps in sequence (e.g. click a menu then click an option). Use "delay" between steps when the page needs time to react (dropdowns, animations).',
     {
       // Single action (backwards compatible)
       action: z.enum(['click', 'type', 'select', 'hover', 'focus', 'clear']).optional().describe('Action for single-step mode'),

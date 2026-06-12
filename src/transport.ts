@@ -1,5 +1,5 @@
 /**
- * Transport abstraction layer for Design Collab.
+ * Transport abstraction layer for Claude Collab.
  *
  * Tools interact with the browser through this interface, which can be
  * backed by Playwright (existing) or a Chrome extension (new).
@@ -82,7 +82,7 @@ let activeTransport: DesignTransport | null = null;
 
 export function getTransport(): DesignTransport {
   if (!activeTransport) {
-    throw new Error('No active transport. Call design_browse first.');
+    throw new Error('No active transport. Call collab_browse first.');
   }
   return activeTransport;
 }

@@ -1,5 +1,5 @@
 /**
- * Build script for the Design Collab Chrome extension.
+ * Build script for the Claude Collab Chrome extension.
  *
  * Uses esbuild to bundle TypeScript sources and copies static files.
  * Also concatenates widget JS files into widget-bundle.js.
@@ -22,7 +22,7 @@ const widgetDir = join(__dirname, '..', 'widget');
 mkdirSync(distDir, { recursive: true });
 mkdirSync(join(distDir, 'icons'), { recursive: true });
 
-console.log('Building Design Collab extension...');
+console.log('Building Claude Collab extension...');
 
 // Bundle TypeScript files
 await build({
@@ -60,7 +60,7 @@ const widgetFiles = [
   // Note: iframe-bridge.js is injected by relay-inject.ts via window.name guard
 ];
 
-let widgetBundle = '// Design Collab Widget Bundle — auto-generated\n';
+let widgetBundle = '// Claude Collab Widget Bundle — auto-generated\n';
 for (const file of widgetFiles) {
   const path = join(widgetDir, file);
   if (existsSync(path)) {

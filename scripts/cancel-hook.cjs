@@ -69,14 +69,14 @@ function tryTargets(endpoint, callback) {
 }
 
 const listenerPath = path.join(__dirname, 'listener.cjs');
-const LISTENER_REMINDER = '\nIMPORTANT: Respond via design_chat, then restart the background listener:\nnode "' + listenerPath + '"';
+const LISTENER_REMINDER = '\nIMPORTANT: Respond via collab_chat, then restart the background listener:\nnode "' + listenerPath + '"';
 
 // Step 1: Check for cancel
 tryTargets('/cancel', (cancelData) => {
   if (cancelData && cancelData.cancel) {
     const reason = cancelData.messages && cancelData.messages.length > 0
-      ? 'User clicked CANCEL in the collab chat. They also said: "' + cancelData.messages.join(' | ') + '". STOP what you are doing. Use design_chat to ask the user what they want instead.' + LISTENER_REMINDER
-      : 'User clicked CANCEL in the collab chat. STOP what you are doing immediately. Use design_chat to ask the user what they want instead.' + LISTENER_REMINDER;
+      ? 'User clicked CANCEL in the collab chat. They also said: "' + cancelData.messages.join(' | ') + '". STOP what you are doing. Use collab_chat to ask the user what they want instead.' + LISTENER_REMINDER
+      : 'User clicked CANCEL in the collab chat. STOP what you are doing immediately. Use collab_chat to ask the user what they want instead.' + LISTENER_REMINDER;
 
     process.stderr.write(reason);
     process.exit(2);
@@ -95,7 +95,7 @@ tryTargets('/cancel', (cancelData) => {
         }
       }
 
-      output.push('Use your judgment: if this changes direction, stop and respond via design_chat. If it\'s minor feedback you can incorporate, acknowledge briefly via design_chat and continue your work.');
+      output.push('Use your judgment: if this changes direction, stop and respond via collab_chat. If it\'s minor feedback you can incorporate, acknowledge briefly via collab_chat and continue your work.');
 
       process.stderr.write(output.join('\n'));
       process.exit(2);

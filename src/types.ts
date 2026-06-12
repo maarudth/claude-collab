@@ -1,4 +1,4 @@
-/** TypeScript declarations for the Design Collab Widget (window.__dc) */
+/** TypeScript declarations for the Claude Collab Widget (window.__dc) */
 
 export interface ElementInfo {
   tag: string;

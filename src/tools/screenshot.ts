@@ -4,7 +4,7 @@ import { getTransport } from '../transport.js';
 
 export function registerScreenshotTool(server: McpServer): void {
   server.tool(
-    'design_screenshot',
+    'collab_screenshot',
     'Take a screenshot of the target site (iframe content) or a specific element within it. Returns the image as base64.',
     {
       selector: z.string().max(500).optional().describe('CSS selector to screenshot a specific element in the target site. If omitted, captures the iframe viewport.'),

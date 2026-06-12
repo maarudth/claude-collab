@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * PostToolUse hook for design-collab. LEGACY — not installed by setup.cjs.
+ * PostToolUse hook for collab. LEGACY — not installed by setup.cjs.
  *
  * The canonical configuration delivers messages via cancel-hook.cjs on
  * PreToolUse (it checks both /cancel and /pending before every tool call),

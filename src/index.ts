@@ -46,18 +46,18 @@ try {
   instructions = readFileSync(join(projectRoot, 'INSTRUCTIONS.md'), 'utf-8')
     .replace('{{PLAYBOOK_PATH}}', join(projectRoot, 'docs', 'PLAYBOOK.md'));
 } catch {
-  instructions = 'Design Collab — AI-Powered Visual Collaboration Tool. See INSTRUCTIONS.md for full guide.';
+  instructions = 'Claude Collab — AI-Powered Visual Collaboration Tool. See INSTRUCTIONS.md for full guide.';
 }
 if (instructions.length > INSTRUCTIONS_CHAR_BUDGET) {
   console.error(
-    `[design-collab] WARNING: instructions are ${instructions.length} chars — ` +
+    `[collab] WARNING: instructions are ${instructions.length} chars — ` +
     `Claude Code truncates at ${INSTRUCTIONS_CHAR_BUDGET}. Trim INSTRUCTIONS.md.`,
   );
 }
 
 const server = new McpServer(
   {
-    name: 'design-collab',
+    name: 'collab',
     version: '0.8.0',  // keep in sync with package.json
   },
   {
@@ -96,7 +96,7 @@ registerActTool(server);
 // Connect via stdio
 const transport = new StdioServerTransport();
 await server.connect(transport);
-console.error('[design-collab] MCP server running on stdio');
+console.error('[collab] MCP server running on stdio');
 
 // Cleanup on exit
 async function handleExit() {

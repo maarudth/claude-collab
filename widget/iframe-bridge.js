@@ -1,5 +1,5 @@
 /**
- * Design Collab — Iframe Bridge
+ * Claude Collab — Iframe Bridge
  * Injected into the target iframe via Playwright's addInitScript.
  * Handles click capture, hover highlights, parent climbing,
  * and element replacement — all communicating with the parent

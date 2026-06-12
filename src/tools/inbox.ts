@@ -6,7 +6,7 @@ import { getPage } from '../browser.js';
 
 export function registerInboxTool(server: McpServer): void {
   server.tool(
-    'design_inbox',
+    'collab_inbox',
     'Check for new user messages in the collab widget without blocking. Returns immediately (or waits up to timeout ms). Use this to poll for replies while doing other work.',
     {
       timeout: z.number().default(0).describe('Max wait time in ms. 0 = instant check, >0 = short poll (e.g. 5000 = wait up to 5s)'),

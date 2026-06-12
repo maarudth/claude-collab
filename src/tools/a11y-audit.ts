@@ -4,7 +4,7 @@ import { getTransport } from '../transport.js';
 
 export function registerA11yAuditTool(server: McpServer): void {
   server.tool(
-    'design_a11y_audit',
+    'collab_a11y_audit',
     'Run an accessibility audit. Checks contrast ratios, missing alt text, form labels, heading hierarchy, touch targets, and link text. Highlights issues on the page with severity-coded overlays.',
     {
       scope: z.string().max(500).default('body').describe('CSS selector to limit audit scope'),

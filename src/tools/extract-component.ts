@@ -4,7 +4,7 @@ import { getTransport } from '../transport.js';
 
 export function registerExtractComponentTool(server: McpServer): void {
   server.tool(
-    'design_extract_component',
+    'collab_extract_component',
     'Extract a DOM element as a self-contained HTML+CSS component. Captures the full subtree with computed styles, resolves relative URLs, and returns portable code ready to use elsewhere.',
     {
       selector: z.string().describe('CSS selector for the root element'),

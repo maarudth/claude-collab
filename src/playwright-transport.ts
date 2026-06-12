@@ -1,5 +1,5 @@
 /**
- * Playwright-backed transport for Design Collab.
+ * Playwright-backed transport for Claude Collab.
  * Wraps the existing browser.ts module into the DesignTransport interface.
  */
 

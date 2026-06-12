@@ -1,5 +1,5 @@
 /**
- * Extension-backed transport for Design Collab.
+ * Extension-backed transport for Claude Collab.
  *
  * Proxies all tool commands over WebSocket to the Chrome extension.
  * The extension's service worker executes commands in the browser
@@ -28,7 +28,7 @@ export class ExtensionTransport implements DesignTransport {
 
     // Register reconnection handler early (before first connection)
     onExtensionReconnect((newConn) => {
-      console.error('[design-collab] Extension reconnected — re-attaching message handler');
+      console.error('[collab] Extension reconnected — re-attaching message handler');
       for (const [, { reject }] of this.pending) {
         reject(new Error('Extension reconnected'));
       }
@@ -42,7 +42,7 @@ export class ExtensionTransport implements DesignTransport {
 
   /** Phase 2: Wait for the extension to connect (blocking). */
   async waitForConnection(timeoutMs: number = 120000): Promise<void> {
-    console.error(`[design-collab] Waiting for extension to connect on ws://127.0.0.1:${this.wsPort}/ext ...`);
+    console.error(`[collab] Waiting for extension to connect on ws://127.0.0.1:${this.wsPort}/ext ...`);
     this.conn = await waitForExtension(timeoutMs);
     this.setupMessageHandler();
   }
@@ -85,18 +85,18 @@ export class ExtensionTransport implements DesignTransport {
         if (msg.type === 'event') {
           if (msg.eventType === 'message' && msg.data?.text) {
             pushMessage(msg.data.text, msg.data.selections);
-            console.error(`[design-collab] User message stored: "${msg.data.text.slice(0, 80)}"`);
+            console.error(`[collab] User message stored: "${msg.data.text.slice(0, 80)}"`);
           } else if (msg.eventType === 'cancel') {
             requestCancel();
-            console.error('[design-collab] Cancel requested');
+            console.error('[collab] Cancel requested');
           } else if (msg.eventType === 'tab-switch' && msg.data?.tabId) {
             this.activeTabId = msg.data.tabId;
             this.managedTabs.add(msg.data.tabId);
-            console.error(`[design-collab] Tab switched to ${msg.data.tabId} (${msg.data.url?.slice(0, 60) || '?'})`);
+            console.error(`[collab] Tab switched to ${msg.data.tabId} (${msg.data.url?.slice(0, 60) || '?'})`);
           }
         }
       } catch (err) {
-        console.error('[design-collab] Failed to parse extension message:', err);
+        console.error('[collab] Failed to parse extension message:', err);
       }
     });
 

@@ -4,7 +4,7 @@ import { getTransport } from '../transport.js';
 
 export function registerExtractTokensTool(server: McpServer): void {
   server.tool(
-    'design_extract_tokens',
+    'collab_extract_tokens',
     'Scan the page and extract its design system: colors, typography scales, spacing values, border radii, and shadows. Clusters similar values and outputs structured tokens.',
     {
       scope: z.string().default('body').describe('CSS selector to limit scan'),

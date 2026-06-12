@@ -4,7 +4,7 @@ import { getTransport } from '../transport.js';
 
 export function registerSynthesizeTool(server: McpServer): void {
   server.tool(
-    'design_synthesize',
+    'collab_synthesize',
     'Analyze all collected inspirations and produce a unified design specification. Extracts color palettes, typography scales, spacing systems, and layout patterns from the collected items. Returns structured data that can be used to build a page combining the best elements from each source. Optionally clears the collection after synthesis.',
     {
       clear: z.boolean().default(false).describe('Clear the inspiration collection after synthesis'),
@@ -21,7 +21,7 @@ export function registerSynthesizeTool(server: McpServer): void {
           content: [{
             type: 'text' as const,
             text: JSON.stringify({
-              error: 'No inspirations collected. Use design_collect to capture elements first.',
+              error: 'No inspirations collected. Use collab_collect to capture elements first.',
             }),
           }],
         };

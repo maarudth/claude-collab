@@ -1,5 +1,5 @@
 /**
- * Voice Module for Design Collab Widget
+ * Voice Module for Claude Collab Widget
  *
  * Adds speech-to-text (STT) and text-to-speech (TTS) to the collab widget.
  * - STT: Web Speech API (SpeechRecognition) — continuous, auto-sends on silence

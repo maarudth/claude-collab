@@ -53,50 +53,50 @@
       ws.close();
     }
     wsPort = port;
-    console.log(`[design-collab] Connecting to ws://127.0.0.1:${port}/ext`);
+    console.log(`[collab] Connecting to ws://127.0.0.1:${port}/ext`);
     ws = new WebSocket(`ws://127.0.0.1:${port}/ext`);
     ws.onopen = () => {
-      console.log("[design-collab] Connected to MCP server, authenticating...");
+      console.log("[collab] Connected to MCP server, authenticating...");
       ws.send(JSON.stringify({ type: "connected", version: "0.1.0", token: wsToken }));
     };
     ws.onmessage = async (event) => {
-      console.log("[design-collab] WS message received:", typeof event.data, String(event.data).slice(0, 200));
+      console.log("[collab] WS message received:", typeof event.data, String(event.data).slice(0, 200));
       try {
         const msg = JSON.parse(event.data);
-        console.log("[design-collab] Parsed command:", msg.type, msg.id);
+        console.log("[collab] Parsed command:", msg.type, msg.id);
         const result = await handleCommand(msg);
-        console.log("[design-collab] Command result:", msg.type, JSON.stringify(result).slice(0, 200));
+        console.log("[collab] Command result:", msg.type, JSON.stringify(result).slice(0, 200));
         if (msg.id && ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ id: msg.id, type: "result", data: result }));
-          console.log("[design-collab] Response sent for:", msg.id);
+          console.log("[collab] Response sent for:", msg.id);
         } else {
-          console.warn("[design-collab] Cannot send response \u2014 ws closed or no id", msg.id, ws?.readyState);
+          console.warn("[collab] Cannot send response \u2014 ws closed or no id", msg.id, ws?.readyState);
         }
       } catch (err) {
-        console.error("[design-collab] Command error:", err);
+        console.error("[collab] Command error:", err);
         try {
           const msg = JSON.parse(event.data);
           if (msg.id && ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ id: msg.id, type: "error", message: sanitizeError(err.message || String(err)) }));
           }
         } catch (innerErr) {
-          console.error("[design-collab] Failed to send error response:", innerErr);
+          console.error("[collab] Failed to send error response:", innerErr);
         }
       }
     };
     ws.onclose = () => {
-      console.log("[design-collab] Disconnected from MCP server");
+      console.log("[collab] Disconnected from MCP server");
       ws = null;
       if (userDisconnected) return;
       setTimeout(() => {
         if (!ws && !userDisconnected) {
-          console.log("[design-collab] Attempting reconnect...");
+          console.log("[collab] Attempting reconnect...");
           autoConnect();
         }
       }, 3e3);
     };
     ws.onerror = (err) => {
-      console.error("[design-collab] WebSocket error:", err);
+      console.error("[collab] WebSocket error:", err);
     };
   }
   function disconnect() {
@@ -130,7 +130,7 @@
       followedTabs.delete(tabId);
     }
     hiddenTabs.clear();
-    console.log("[design-collab] Removed widgets from all tabs");
+    console.log("[collab] Removed widgets from all tabs");
   }
   async function handleCommand(msg) {
     switch (msg.type) {
@@ -240,7 +240,7 @@
     }
   }
   async function handleCleanup() {
-    console.log("[design-collab] Cleanup: removing widgets from followed tabs, closing created tabs");
+    console.log("[collab] Cleanup: removing widgets from followed tabs, closing created tabs");
     await removeFollowedWidgets();
     const createdTabs = [...managedTabs];
     for (const tabId of createdTabs) {
@@ -417,7 +417,7 @@
         });
         managedTabs.delete(tabId);
         followedTabs.delete(tabId);
-        console.log(`[design-collab] Removed widget from followed tab ${tabId}`);
+        console.log(`[collab] Removed widget from followed tab ${tabId}`);
       } catch (err) {
         managedTabs.delete(tabId);
         followedTabs.delete(tabId);
@@ -440,10 +440,10 @@
       if (!tab.url || tab.url.startsWith("chrome://") || tab.url.startsWith("chrome-extension://")) return;
       ws.send(JSON.stringify({ type: "event", eventType: "tab-switch", data: { tabId, url: tab.url } }));
       if (managedTabs.has(tabId)) {
-        console.log(`[design-collab] Follow-tabs: switched to managed tab ${tabId}`);
+        console.log(`[collab] Follow-tabs: switched to managed tab ${tabId}`);
         return;
       }
-      console.log(`[design-collab] Follow-tabs: injecting widget into tab ${tabId} (${tab.url?.slice(0, 60)})`);
+      console.log(`[collab] Follow-tabs: injecting widget into tab ${tabId} (${tab.url?.slice(0, 60)})`);
       managedTabs.add(tabId);
       followedTabs.add(tabId);
       await chrome.scripting.executeScript({
@@ -485,9 +485,9 @@
           args: [chatHistory]
         });
       }
-      console.log(`[design-collab] Follow-tabs: widget injected into tab ${tabId}`);
+      console.log(`[collab] Follow-tabs: widget injected into tab ${tabId}`);
     } catch (err) {
-      console.error(`[design-collab] Follow-tabs: failed to inject into tab ${tabId}:`, err);
+      console.error(`[collab] Follow-tabs: failed to inject into tab ${tabId}:`, err);
       managedTabs.delete(tabId);
       followedTabs.delete(tabId);
     }
@@ -495,7 +495,7 @@
   chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
     if (!managedTabs.has(tabId)) return;
     if (changeInfo.status !== "complete") return;
-    console.log(`[design-collab] Tab ${tabId} navigated, re-injecting widget...`);
+    console.log(`[collab] Tab ${tabId} navigated, re-injecting widget...`);
     try {
       await chrome.scripting.executeScript({
         target: { tabId },
@@ -511,9 +511,9 @@
         world: "MAIN",
         files: ["widget-bundle.js"]
       });
-      console.log(`[design-collab] Widget re-injected into tab ${tabId}`);
+      console.log(`[collab] Widget re-injected into tab ${tabId}`);
     } catch (err) {
-      console.error(`[design-collab] Failed to re-inject widget into tab ${tabId}:`, err);
+      console.error(`[collab] Failed to re-inject widget into tab ${tabId}:`, err);
     }
   });
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -613,7 +613,7 @@
           }
           sendResponse({ ok: true, hidden: !isHidden });
         } catch (err) {
-          console.error("[design-collab] Toggle failed:", err);
+          console.error("[collab] Toggle failed:", err);
           sendResponse({ ok: false });
         }
       })();
@@ -645,13 +645,13 @@
         ws.send(payload);
         sendResponse({ ok: true });
       } else {
-        console.warn("[design-collab] WS not open for relay message, queuing retry...");
+        console.warn("[collab] WS not open for relay message, queuing retry...");
         setTimeout(() => {
           if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(payload);
-            console.log("[design-collab] Queued relay message sent after retry");
+            console.log("[collab] Queued relay message sent after retry");
           } else {
-            console.error("[design-collab] Relay message DROPPED \u2014 WS still not open after retry");
+            console.error("[collab] Relay message DROPPED \u2014 WS still not open after retry");
           }
         }, 2e3);
         sendResponse({ ok: false, error: "WS not connected, message queued for retry" });
@@ -669,7 +669,7 @@
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(payload);
       } else {
-        console.warn("[design-collab] WS not open for cancel relay, queuing retry...");
+        console.warn("[collab] WS not open for cancel relay, queuing retry...");
         setTimeout(() => {
           if (ws && ws.readyState === WebSocket.OPEN) ws.send(payload);
         }, 2e3);
@@ -726,7 +726,7 @@
             sendResponse({ data: base64 });
           }
         } catch (err) {
-          console.error("[design-collab] Screenshot relay failed:", err);
+          console.error("[collab] Screenshot relay failed:", err);
           sendResponse({ data: null });
         }
       })();
@@ -735,7 +735,7 @@
   });
   async function autoConnect(attempt = 0) {
     if (attempt >= MAX_PORT_ATTEMPTS) {
-      console.log("[design-collab] No MCP server found on ports " + DEFAULT_PORT + "-" + (DEFAULT_PORT + MAX_PORT_ATTEMPTS - 1));
+      console.log("[collab] No MCP server found on ports " + DEFAULT_PORT + "-" + (DEFAULT_PORT + MAX_PORT_ATTEMPTS - 1));
       return;
     }
     if (attempt === 0) {
@@ -747,18 +747,18 @@
       }
     }
     if (userDisconnected) {
-      console.log("[design-collab] User disconnected \u2014 not auto-connecting");
+      console.log("[collab] User disconnected \u2014 not auto-connecting");
       return;
     }
     const port = DEFAULT_PORT + attempt;
-    console.log(`[design-collab] Scanning port ${port}...`);
+    console.log(`[collab] Scanning port ${port}...`);
     fetch(`http://127.0.0.1:${port}/health`).then((r) => r.json()).then((data) => {
       if (data.ok) {
         if (wsToken) {
-          console.log(`[design-collab] Found MCP server on port ${port}, connecting with stored token`);
+          console.log(`[collab] Found MCP server on port ${port}, connecting with stored token`);
           connect(port);
         } else {
-          console.log(`[design-collab] Found MCP server on port ${port}, but no auth token \u2014 paste in popup.`);
+          console.log(`[collab] Found MCP server on port ${port}, but no auth token \u2014 paste in popup.`);
         }
       } else {
         autoConnect(attempt + 1);
@@ -776,5 +776,5 @@
       }
     }
   });
-  console.log("[design-collab] Service worker loaded");
+  console.log("[collab] Service worker loaded");
 })();

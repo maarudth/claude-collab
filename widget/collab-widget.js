@@ -1,5 +1,5 @@
 /**
- * Design Collab Widget v5 (iframe architecture)
+ * Claude Collab Widget v5 (iframe architecture)
  * Lives in the parent frame (wrapper page). Target sites load in an iframe.
  * Click capture runs in the iframe via iframe-bridge.js, communicating via postMessage.
  * AI communicates via window.__dc.api methods through the MCP server.
@@ -1241,10 +1241,10 @@
       broadcast({ text, type: 'user' });
     }
     // Relay message to Node.js via Playwright bridge (no HTTP, no mixed content issues)
-    // Include any pending selections so Claude doesn't need a separate design_selections call
-    const msgText = (text || '\ud83d\udcf7') + (hadImage ? ' [IMAGE ATTACHED — use design_inbox to retrieve it]' : '');
+    // Include any pending selections so Claude doesn't need a separate collab_selections call
+    const msgText = (text || '\ud83d\udcf7') + (hadImage ? ' [IMAGE ATTACHED — use collab_inbox to retrieve it]' : '');
     // Read selections without clearing the buffer — getSelections() clears it,
-    // which would make a subsequent design_selections call return empty
+    // which would make a subsequent collab_selections call return empty
     var selections = [];
     var mods = state.modifiedElements;
     var modKeys = Object.keys(mods);

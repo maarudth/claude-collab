@@ -4,7 +4,7 @@ import { getTransport } from '../transport.js';
 
 export function registerResponsiveAuditTool(server: McpServer): void {
   server.tool(
-    'design_responsive_audit',
+    'collab_responsive_audit',
     'Audit responsive design across breakpoints. Resizes viewport, runs layout checks, captures screenshots per breakpoint.',
     {
       breakpoints: z.array(z.object({
@@ -131,7 +131,7 @@ export function registerResponsiveAuditTool(server: McpServer): void {
             const buffer = await t.screenshot();
             screenshots.push({ name: bp.name, data: buffer.toString('base64') });
           } catch (err) {
-            console.error(`[design-collab] Screenshot failed for ${bp.name}:`, err);
+            console.error(`[collab] Screenshot failed for ${bp.name}:`, err);
           }
         }
       }

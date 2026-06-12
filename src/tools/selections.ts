@@ -4,7 +4,7 @@ import { getTransport } from '../transport.js';
 
 export function registerSelectionsTool(server: McpServer): void {
   server.tool(
-    'design_selections',
+    'collab_selections',
     'Get elements the user has selected via click capture in the collab widget. Returns element data with computed styles. Clears the selection buffer after reading.',
     {},
     async () => {

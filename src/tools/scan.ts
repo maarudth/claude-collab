@@ -4,8 +4,8 @@ import { getTransport } from '../transport.js';
 
 export function registerScanTool(server: McpServer): void {
   server.tool(
-    'design_scan',
-    'Instantly read a web page as structured text — 100x faster and cheaper than a screenshot. Returns an accessibility-tree-like snapshot of interactive elements (with clickable [ref=eN] indices for design_act), page content as markdown, or both. Use "snapshot" mode to understand page structure and interact, "content" mode to read articles/docs, "full" for first visits.',
+    'collab_scan',
+    'Instantly read a web page as structured text — 100x faster and cheaper than a screenshot. Returns an accessibility-tree-like snapshot of interactive elements (with clickable [ref=eN] indices for collab_act), page content as markdown, or both. Use "snapshot" mode to understand page structure and interact, "content" mode to read articles/docs, "full" for first visits.',
     {
       mode: z.enum(['snapshot', 'content', 'full']).default('snapshot').describe('"snapshot" = interactive element tree with refs, "content" = main content as markdown, "full" = both'),
       scope: z.string().max(500).default('body').describe('CSS selector to limit scan area (e.g. "main", "#content")'),
@@ -246,7 +246,7 @@ export function registerScanTool(server: McpServer): void {
     lines.push(line);
   }
 
-  // Store ref map on the window for design_act
+  // Store ref map on the window for collab_act
   window.__dcRefs = refMap;
   window.__dcRefsUrl = location.href;
   window.__dcRefsTimestamp = Date.now();

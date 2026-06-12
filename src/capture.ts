@@ -42,7 +42,7 @@ export async function fulfillCaptureRects(
           mimeType: 'image/png',
         });
       } catch (err) {
-        console.error('[design-collab] Capture failed:', err);
+        console.error('[collab] Capture failed:', err);
         content.push({
           type: 'text' as const,
           text: JSON.stringify({ captureError: String(err) }),

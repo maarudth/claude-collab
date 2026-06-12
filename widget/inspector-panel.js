@@ -1,5 +1,5 @@
 /**
- * Design Collab — Inspector Panel
+ * Claude Collab — Inspector Panel
  * Visual CSS property editor that appears when an element is selected.
  * Lives in the parent frame alongside the collab widget.
  * Communicates with iframe-bridge.js via postMessage to apply live style changes.

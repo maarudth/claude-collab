@@ -4,7 +4,7 @@ import { getTransport } from '../transport.js';
 
 export function registerMoodboardTool(server: McpServer): void {
   server.tool(
-    'design_moodboard',
+    'collab_moodboard',
     'Show all collected design inspirations as a visual moodboard in the preview panel. Displays screenshot thumbnails, categories, notes, and source info in a grid. Use after collecting several inspirations to review before synthesis.',
     {
       filter: z.enum(['all', 'header', 'nav', 'hero', 'layout', 'colors', 'typography', 'spacing', 'component', 'footer', 'card', 'button', 'form', 'animation', 'other']).default('all').describe('Filter by category, or show all'),
@@ -27,7 +27,7 @@ export function registerMoodboardTool(server: McpServer): void {
             type: 'text' as const,
             text: JSON.stringify({
               items: [],
-              hint: 'No inspirations collected yet. Use design_collect to capture elements from sites you\'re browsing.',
+              hint: 'No inspirations collected yet. Use collab_collect to capture elements from sites you\'re browsing.',
             }),
           }],
         };

@@ -177,7 +177,7 @@ function tryListenOnPort(port: number, attempt: number): Promise<number> {
       let authenticated = false;
       const authTimeout = setTimeout(() => {
         if (!authenticated) {
-          console.error('[design-collab] WS connection closed: no auth within 5s');
+          console.error('[collab] WS connection closed: no auth within 5s');
           ws.close(4001, 'Auth timeout');
         }
       }, 5000);
@@ -193,7 +193,7 @@ function tryListenOnPort(port: number, attempt: number): Promise<number> {
             ws.removeListener('message', authHandler);
 
             activeConnection = ws;
-            console.error('[design-collab] Extension authenticated and connected');
+            console.error('[collab] Extension authenticated and connected');
 
             // Notify any pending first-connection listeners (consumed once)
             for (const listener of connectionListeners) {
@@ -206,12 +206,12 @@ function tryListenOnPort(port: number, attempt: number): Promise<number> {
               listener(ws);
             }
           } else {
-            console.error('[design-collab] WS auth failed: invalid token or wrong first message');
+            console.error('[collab] WS auth failed: invalid token or wrong first message');
             clearTimeout(authTimeout);
             ws.close(4003, 'Invalid token');
           }
         } catch {
-          console.error('[design-collab] WS auth failed: malformed first message');
+          console.error('[collab] WS auth failed: malformed first message');
           clearTimeout(authTimeout);
           ws.close(4003, 'Malformed auth');
         }
@@ -221,23 +221,23 @@ function tryListenOnPort(port: number, attempt: number): Promise<number> {
 
       ws.on('close', () => {
         clearTimeout(authTimeout);
-        console.error('[design-collab] Extension disconnected');
+        console.error('[collab] Extension disconnected');
         if (activeConnection === ws) {
           activeConnection = null;
         }
       });
 
       ws.on('error', (err) => {
-        console.error('[design-collab] WebSocket error:', err);
+        console.error('[collab] WebSocket error:', err);
       });
     });
 
     server.on('error', (err: NodeJS.ErrnoException) => {
       if (err.code === 'EADDRINUSE' && attempt < MAX_PORT_ATTEMPTS) {
-        console.error(`[design-collab] Port ${port} in use, trying ${port + 1}...`);
+        console.error(`[collab] Port ${port} in use, trying ${port + 1}...`);
         resolvePort(tryListenOnPort(port + 1, attempt + 1) as any);
       } else {
-        console.error(`[design-collab] Failed to start WS server:`, err);
+        console.error(`[collab] Failed to start WS server:`, err);
         resolvePort(0);
       }
     });
@@ -249,8 +249,8 @@ function tryListenOnPort(port: number, attempt: number): Promise<number> {
       writeFileSync(WS_PORT_FILE, `${port}:${authToken}`, { encoding: 'utf-8', mode: 0o600 });
       // Clean up stale notify-port from previous Playwright sessions
       try { unlinkSync(NOTIFY_PORT_FILE); } catch { /* may not exist */ }
-      console.error(`[design-collab] WebSocket server listening on port ${port}`);
-      console.error(`[design-collab] Auth token: ${authToken}`);
+      console.error(`[collab] WebSocket server listening on port ${port}`);
+      console.error(`[collab] Auth token: ${authToken}`);
       resolvePort(port);
     });
   });

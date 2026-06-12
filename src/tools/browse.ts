@@ -18,11 +18,11 @@ const LISTENER_INSTRUCTIONS = `
    node "${LISTENER_PATH}"
    ↑ Copy this command EXACTLY. Do NOT change the path.
 
-2. Send your first message with design_chat (waitForReply: false).
+2. Send your first message with collab_chat (waitForReply: false).
 
 3. NEVER use waitForReply: true — it blocks message delivery.
 
-4. When the listener completes with a message, respond via design_chat, then start a NEW listener with the same command.
+4. When the listener completes with a message, respond via collab_chat, then start a NEW listener with the same command.
 
 Before complex work, Read the playbook (workflows, per-tool gotchas, limits):
 ${PLAYBOOK_PATH}
@@ -30,7 +30,7 @@ ${PLAYBOOK_PATH}
 
 export function registerBrowseTool(server: McpServer): void {
   server.tool(
-    'design_browse',
+    'collab_browse',
     'Open a URL in a new tab. Each call creates a new tab — use for browsing references while keeping other pages open. The chat widget persists across all tabs.',
     {
       url: z.string().url().describe('The URL to navigate to'),
@@ -69,9 +69,9 @@ export function registerBrowseTool(server: McpServer): void {
                   ``,
                   `AUTH TOKEN: ${token}`,
                   ``,
-                  `Tell the user: "I've started the extension server. Please open the Design Collab extension popup in Chrome, paste this auth token, and click Connect. Then I'll continue."`,
+                  `Tell the user: "I've started the extension server. Please open the Claude Collab extension popup in Chrome, paste this auth token, and click Connect. Then I'll continue."`,
                   ``,
-                  `After they confirm, call design_browse with mode: "extension" again — it will connect instantly.`,
+                  `After they confirm, call collab_browse with mode: "extension" again — it will connect instantly.`,
                 ].join('\n'),
               }],
             };

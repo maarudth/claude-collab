@@ -38,7 +38,7 @@ function buildWrapperHTML(): string {
   return `<!DOCTYPE html>
 <html>
 <head>
-  <title>Design Collab</title>
+  <title>Claude Collab</title>
   <style>
     * { margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #0e0e1a; }
@@ -77,7 +77,7 @@ export async function ensureBrowser(): Promise<{ browser: Browser; page: Page }>
     try { await browser.close(); } catch { /* ignore */ }
   }
 
-  console.error('[design-collab] Launching Chromium...');
+  console.error('[collab] Launching Chromium...');
   browser = await chromium.launch({
     headless: false,
     args: [
@@ -123,7 +123,7 @@ export async function ensureBrowser(): Promise<{ browser: Browser; page: Page }>
           body,
         });
       } catch (err) {
-        console.error('[design-collab] Route interception error:', err);
+        console.error('[collab] Route interception error:', err);
         // If fetch fails, let the original request through
         await route.continue();
       }
@@ -181,7 +181,7 @@ export async function ensureBrowser(): Promise<{ browser: Browser; page: Page }>
   // Expose a direct bridge function so the widget can relay messages without HTTP
   await exposeRelayFunction(page);
 
-  console.error('[design-collab] Browser ready (iframe + tabs architecture)');
+  console.error('[collab] Browser ready (iframe + tabs architecture)');
   return { browser, page };
 }
 
@@ -201,7 +201,7 @@ export async function ensureBrowserSingle(url: string): Promise<{ browser: Brows
 
   if (browser && browser.isConnected() && page && !page.isClosed()) {
     // Browser exists — navigate to new URL and re-inject widget
-    console.error(`[design-collab] Single-page mode: re-navigating to ${url}`);
+    console.error(`[collab] Single-page mode: re-navigating to ${url}`);
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.evaluate(getWidgetScript());
     await page.evaluate(getVoiceModuleScript());
@@ -219,7 +219,7 @@ export async function ensureBrowserSingle(url: string): Promise<{ browser: Brows
     try { await browser.close(); } catch { /* ignore */ }
   }
 
-  console.error('[design-collab] Launching Chromium (single-page mode)...');
+  console.error('[collab] Launching Chromium (single-page mode)...');
   browser = await chromium.launch({
     headless: false,
     args: [
@@ -254,7 +254,7 @@ export async function ensureBrowserSingle(url: string): Promise<{ browser: Brows
   page = await context.newPage();
 
   // Navigate to the target URL
-  console.error(`[design-collab] Single-page mode: navigating to ${url}`);
+  console.error(`[collab] Single-page mode: navigating to ${url}`);
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
   // Inject widget + voice module + inspector directly onto the page
@@ -272,7 +272,7 @@ export async function ensureBrowserSingle(url: string): Promise<{ browser: Brows
   // Expose a direct bridge function so the widget can relay messages without HTTP
   await exposeRelayFunction(page);
 
-  console.error('[design-collab] Browser ready (single-page mode)');
+  console.error('[collab] Browser ready (single-page mode)');
   return { browser, page };
 }
 
@@ -295,7 +295,7 @@ export async function openNewTab(url: string): Promise<{ tabId: number; frame: F
   }
 
   // Navigate the frame
-  console.error(`[design-collab] Tab ${tabId}: navigating to ${url}`);
+  console.error(`[collab] Tab ${tabId}: navigating to ${url}`);
   await frame.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
   // Update tab info with actual page title
@@ -317,7 +317,7 @@ export async function navigateIframe(url: string): Promise<Frame> {
   const p = getPage();
 
   if (mode === 'single') {
-    console.error(`[design-collab] Single-page: navigating to ${url}`);
+    console.error(`[collab] Single-page: navigating to ${url}`);
     await p.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
     // Re-inject widget + voice + inspector (new page load clears them; bridge re-injects via addInitScript)
     await p.evaluate(getWidgetScript());
@@ -328,7 +328,7 @@ export async function navigateIframe(url: string): Promise<Frame> {
 
   const frame = await getActiveFrame();
 
-  console.error(`[design-collab] Navigating active tab to ${url}`);
+  console.error(`[collab] Navigating active tab to ${url}`);
   await frame.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
   // Update tab info
@@ -381,7 +381,7 @@ export function isBrowserReady(): boolean {
 
 export function getPage(): Page {
   if (!page || page.isClosed()) {
-    throw new Error('No active browser page. Call design_browse first.');
+    throw new Error('No active browser page. Call collab_browse first.');
   }
   return page;
 }
@@ -400,7 +400,7 @@ export async function getActiveFrame(): Promise<Frame> {
   const frameName = await p.evaluate(() => window.__dcTabs.getActiveFrameName());
   const frame = p.frame({ name: frameName });
   if (!frame) {
-    throw new Error(`Active frame ${frameName} not found. Call design_browse first.`);
+    throw new Error(`Active frame ${frameName} not found. Call collab_browse first.`);
   }
   return frame;
 }
@@ -511,7 +511,7 @@ function startNotifyServer(): Promise<number> {
       const port = addr.port;
       // Store port and auth token so hooks can authenticate
       writeFileSync(NOTIFY_PORT_FILE, `${port}:${notifyToken}`, { encoding: 'utf-8', mode: 0o600 });
-      console.error(`[design-collab] Notify server listening on port ${port}`);
+      console.error(`[collab] Notify server listening on port ${port}`);
       resolvePort(port);
     } else {
       resolvePort(0);
@@ -563,7 +563,7 @@ async function exposeRelayFunction(p: Page): Promise<void> {
           });
         }
       } catch (err) {
-        console.error('[design-collab] Screenshot failed:', err);
+        console.error('[collab] Screenshot failed:', err);
         return null;
       }
     });
@@ -587,7 +587,7 @@ function stopNotifyServer(): void {
  * Clean up browser on exit.
  */
 export async function cleanup(): Promise<void> {
-  console.error('[design-collab] Cleaning up...');
+  console.error('[collab] Cleaning up...');
   stopNotifyServer();
   if (browser) {
     try { await browser.close(); } catch { /* ignore */ }

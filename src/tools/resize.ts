@@ -4,7 +4,7 @@ import { getTransport } from '../transport.js';
 
 export function registerResizeTool(server: McpServer): void {
   server.tool(
-    'design_resize',
+    'collab_resize',
     'Resize the browser viewport for responsive design testing. Common breakpoints: mobile (390x844), tablet (768x1024), desktop (1280x800), wide (1440x900).',
     {
       width: z.number().min(320).max(2560).describe('Viewport width in pixels'),

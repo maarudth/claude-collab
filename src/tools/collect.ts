@@ -4,7 +4,7 @@ import { getTransport } from '../transport.js';
 
 export function registerCollectTool(server: McpServer): void {
   server.tool(
-    'design_collect',
+    'collab_collect',
     'Collect a design inspiration from the current page. Captures the selected element\'s styles, component HTML, a screenshot thumbnail, and the source URL. Tag it with a category (header, colors, layout, typography, spacing, component, etc.) and an optional note. Items accumulate across tabs for later synthesis.',
     {
       selector: z.string().describe('CSS selector of the element to collect'),
@@ -178,7 +178,7 @@ export function registerCollectTool(server: McpServer): void {
         return {
           content: [{
             type: 'text' as const,
-            text: JSON.stringify({ error: 'Collection full (50 items max). Use design_synthesize to process current items, then clear.' }),
+            text: JSON.stringify({ error: 'Collection full (50 items max). Use collab_synthesize to process current items, then clear.' }),
           }],
         };
       }

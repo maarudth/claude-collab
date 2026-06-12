@@ -6,7 +6,7 @@ import { getTransport } from '../transport.js';
 
 export function registerExportChatTool(server: McpServer): void {
   server.tool(
-    'design_export_chat',
+    'collab_export_chat',
     'Export the full chat history from the widget. Use this to save conversation context before it gets lost to context window compaction, or to create a session log. Optionally writes to a file.',
     {
       filePath: z.string().optional().describe('Absolute file path to write the chat export to. If omitted, returns the chat JSON directly.'),
@@ -27,7 +27,7 @@ export function registerExportChatTool(server: McpServer): void {
           };
         }
         writeFileSync(absPath, chatJson, 'utf-8');
-        console.error(`[design_export_chat] Chat exported to ${absPath}`);
+        console.error(`[collab_export_chat] Chat exported to ${absPath}`);
 
         return {
           content: [{

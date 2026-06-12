@@ -1,8 +1,8 @@
-// Design Collab Widget Bundle — auto-generated
+// Claude Collab Widget Bundle — auto-generated
 
 // === collab-widget.js ===
 /**
- * Design Collab Widget v5 (iframe architecture)
+ * Claude Collab Widget v5 (iframe architecture)
  * Lives in the parent frame (wrapper page). Target sites load in an iframe.
  * Click capture runs in the iframe via iframe-bridge.js, communicating via postMessage.
  * AI communicates via window.__dc.api methods through the MCP server.
@@ -1244,10 +1244,10 @@
       broadcast({ text, type: 'user' });
     }
     // Relay message to Node.js via Playwright bridge (no HTTP, no mixed content issues)
-    // Include any pending selections so Claude doesn't need a separate design_selections call
-    const msgText = (text || '\ud83d\udcf7') + (hadImage ? ' [IMAGE ATTACHED — use design_inbox to retrieve it]' : '');
+    // Include any pending selections so Claude doesn't need a separate collab_selections call
+    const msgText = (text || '\ud83d\udcf7') + (hadImage ? ' [IMAGE ATTACHED — use collab_inbox to retrieve it]' : '');
     // Read selections without clearing the buffer — getSelections() clears it,
-    // which would make a subsequent design_selections call return empty
+    // which would make a subsequent collab_selections call return empty
     var selections = [];
     var mods = state.modifiedElements;
     var modKeys = Object.keys(mods);
@@ -1896,7 +1896,7 @@
 
 // === voice-module.js ===
 /**
- * Voice Module for Design Collab Widget
+ * Voice Module for Claude Collab Widget
  *
  * Adds speech-to-text (STT) and text-to-speech (TTS) to the collab widget.
  * - STT: Web Speech API (SpeechRecognition) — continuous, auto-sends on silence
@@ -2331,7 +2331,7 @@
 
 // === inspector-panel.js ===
 /**
- * Design Collab — Inspector Panel
+ * Claude Collab — Inspector Panel
  * Visual CSS property editor that appears when an element is selected.
  * Lives in the parent frame alongside the collab widget.
  * Communicates with iframe-bridge.js via postMessage to apply live style changes.
@@ -3513,7 +3513,7 @@
 
 // === iframe-bridge.js ===
 /**
- * Design Collab — Iframe Bridge
+ * Claude Collab — Iframe Bridge
  * Injected into the target iframe via Playwright's addInitScript.
  * Handles click capture, hover highlights, parent climbing,
  * and element replacement — all communicating with the parent

@@ -30,7 +30,7 @@ const OUR_SCRIPTS = ['cancel-hook.cjs', 'stop-hook.cjs', 'session-hook.cjs', 'ev
 const HOOKS = {
   PreToolUse: {
     // No matcher: user messages must be able to interrupt ANY tool call,
-    // not just design_* ones. The script no-ops in <5ms when no collab
+    // not just collab_* ones. The script no-ops in <5ms when no collab
     // session is active (port files absent).
     hooks: [{ type: 'command', command: scriptCmd('cancel-hook.cjs'), timeout: 3 }],
   },
@@ -38,8 +38,10 @@ const HOOKS = {
     hooks: [{ type: 'command', command: scriptCmd('stop-hook.cjs'), timeout: 3 }],
   },
   PostToolUse: {
-    // MCP tool names are namespaced: mcp__<server>__<tool>
-    matcher: 'mcp__design-collab__design_browse|mcp__design-collab__design_close',
+    // Unanchored on purpose: full names are mcp__<registration-name>__collab_browse,
+    // and the registration name is whatever the user typed in `claude mcp add`.
+    // Matching on the tool suffix works for any registration name.
+    matcher: 'collab_browse|collab_close',
     hooks: [{ type: 'command', command: scriptCmd('session-hook.cjs'), timeout: 3 }],
   },
   PermissionRequest: {
@@ -124,7 +126,7 @@ function main() {
   console.log(`
 Next steps:
   1. Register the MCP server (run from anywhere):
-       claude mcp add design-collab -- npx tsx "${path.join(PROJECT_ROOT, 'src', 'index.ts').replace(/\\/g, '/')}"
+       claude mcp add collab -- npx tsx "${path.join(PROJECT_ROOT, 'src', 'index.ts').replace(/\\/g, '/')}"
   2. Restart any running Claude Code session to pick up the hooks.
   3. In Claude Code, try:  "Use collab to open example.com"
 

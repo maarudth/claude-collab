@@ -1,5 +1,5 @@
 /**
- * Design Collab — Tab Manager
+ * Claude Collab — Tab Manager
  * Manages multiple iframes in the wrapper page, providing a browser-like
  * tab experience. The chat widget stays fixed while tabs switch underneath.
  *

@@ -18,7 +18,7 @@ async function getEdgeTTS() {
 
 export function registerVoiceTTSTool(server: McpServer): void {
   server.tool(
-    'design_voice_tts',
+    'collab_voice_tts',
     'Speak text aloud in the collab browser using Edge TTS. The audio plays in the browser and the mic is muted during playback to prevent echo.',
     {
       text: z.string().describe('Text to speak aloud'),

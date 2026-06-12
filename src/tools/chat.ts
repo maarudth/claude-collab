@@ -25,7 +25,7 @@ function isListenerAlive(): boolean {
 
 export function registerChatTool(server: McpServer): void {
   server.tool(
-    'design_chat',
+    'collab_chat',
     'Send a message to the user via the collab widget chat. IMPORTANT: Do NOT use waitForReply: true — it blocks hook-based message delivery and causes you to miss user messages. Always leave waitForReply as false (default) and use the background listener to receive replies.',
     {
       message: z.string().max(50000).describe('Message to send to the user'),
@@ -62,7 +62,7 @@ export function registerChatTool(server: McpServer): void {
           }],
         };
       }
-      console.error(`[design_chat] Waiting for user reply (timeout: ${timeout}ms)...`);
+      console.error(`[collab_chat] Waiting for user reply (timeout: ${timeout}ms)...`);
       try {
         const page = getPage(); // waitForFunction is Playwright-specific
         await page.waitForFunction(

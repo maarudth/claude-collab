@@ -117,7 +117,7 @@ function formatMessages(messages) {
       output.push('[COLLAB] Selected elements: ' + JSON.stringify(m.selections));
     }
   }
-  output.push('\u2192 Respond via design_chat, then restart listener.');
+  output.push('\u2192 Respond via collab_chat, then restart listener.');
   return output.join('\n');
 }
 

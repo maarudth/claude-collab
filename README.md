@@ -39,7 +39,7 @@ git clone https://github.com/maarudth/claude-collab.git
 cd claude-collab
 npm install
 npm run setup        # installs the Claude Code hooks automatically
-claude mcp add design-collab -- npx tsx src/index.ts   # run from the repo directory
+claude mcp add collab -- npx tsx src/index.ts   # run from the repo directory
 ```
 
 `npm run setup` configures the four Claude Code hooks (real-time message delivery, cancel support, idle wake-up, permission mirroring) in your global `~/.claude/settings.json`, with a backup of your existing settings. Use `npm run setup -- --project` to install into the current project's `.claude/settings.json` instead, and `npm run setup -- --remove` to uninstall. Re-running is safe — it replaces stale entries, including after moving the repo.
@@ -54,7 +54,7 @@ npm run build:ext
 
 Then `chrome://extensions` → enable Developer mode → Load unpacked → select `extension/dist`.
 
-The first `design_browse` in extension mode prints a one-time auth token; paste it into the extension popup. All traffic stays on `127.0.0.1` and is token-authenticated.
+The first `collab_browse` in extension mode prints a one-time auth token; paste it into the extension popup. All traffic stays on `127.0.0.1` and is token-authenticated.
 
 ## Quick start
 
@@ -88,14 +88,14 @@ The browser opens with a chat widget in the page — from there, talk to Claude 
 
 | Workflow | Tools |
 |---|---|
-| Page understanding | `design_scan` (structured text snapshot, preferred), `design_act` (click/type/select via refs), `design_screenshot` |
-| Browsing | `design_browse`, `design_navigate`, `design_tabs`, `design_resize` |
-| Live building | `design_evaluate` (run JS on the page), `design_preview` (in-page mockup panel), `design_options` (clickable A/B variants), `design_wireframe` |
-| You pointing at things | `design_selections` (your click-captured elements) |
-| Inspection | `design_extract_styles`, `design_extract_tokens`, `design_extract_component` |
-| Inspiration | `design_collect`, `design_moodboard`, `design_synthesize` |
-| Auditing | `design_a11y_audit`, `design_responsive_audit`, `design_visual_diff` |
-| Communication | `design_chat`, `design_voice_tts`, `design_inbox`, `design_export_chat` |
+| Page understanding | `collab_scan` (structured text snapshot, preferred), `collab_act` (click/type/select via refs), `collab_screenshot` |
+| Browsing | `collab_browse`, `collab_navigate`, `collab_tabs`, `collab_resize` |
+| Live building | `collab_evaluate` (run JS on the page), `collab_preview` (in-page mockup panel), `collab_options` (clickable A/B variants), `collab_wireframe` |
+| You pointing at things | `collab_selections` (your click-captured elements) |
+| Inspection | `collab_extract_styles`, `collab_extract_tokens`, `collab_extract_component` |
+| Inspiration | `collab_collect`, `collab_moodboard`, `collab_synthesize` |
+| Auditing | `collab_a11y_audit`, `collab_responsive_audit`, `collab_visual_diff` |
+| Communication | `collab_chat`, `collab_voice_tts`, `collab_inbox`, `collab_export_chat` |
 
 How Claude is guided: a compact core protocol ships as MCP server instructions, and a full playbook (`docs/PLAYBOOK.md`) is read on demand — workflows, per-tool gotchas, limits.
 

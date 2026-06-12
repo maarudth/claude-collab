@@ -4,7 +4,7 @@ import { getTransport } from '../transport.js';
 
 export function registerTabsTool(server: McpServer): void {
   server.tool(
-    'design_tabs',
+    'collab_tabs',
     'Manage browser tabs. List all open tabs, switch to a specific tab, or close a tab. The chat widget persists across all tabs.',
     {
       action: z.enum(['list', 'switch', 'close']).describe('Action: "list" shows all tabs, "switch" activates a tab, "close" removes a tab'),
@@ -31,7 +31,7 @@ export function registerTabsTool(server: McpServer): void {
         return {
           content: [{
             type: 'text' as const,
-            text: JSON.stringify({ error: 'Tab management not available in single-page mode. Use design_navigate to change pages.' }),
+            text: JSON.stringify({ error: 'Tab management not available in single-page mode. Use collab_navigate to change pages.' }),
           }],
         };
       }
