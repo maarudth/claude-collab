@@ -13,8 +13,9 @@ Built as an [MCP server](https://modelcontextprotocol.io/) for Claude Code. Open
 Every browser agent today is one-directional: the agent acts, you watch from a side panel or a terminal. Claude Collab makes the page itself the shared workspace:
 
 - **You point, instead of describing.** Click any element (Ctrl+click for several) and it's attached to your next message — no more "the second button in the nav, no, the other one."
+- **You edit live, too.** The inspector panel shows any element's CSS for real-time editing — tweak values, drag elements around the page, walk up the DOM with arrow keys — and your edits ride along to Claude with your next message, so it builds on what you changed.
 - **Claude shows, instead of dumping code.** Mockups appear in a draggable in-page panel, A/B variants as clickable options that apply to the real page, collected inspiration as a moodboard.
-- **The conversation lives in the browser.** Chat widget in the page, with voice mode if you want it. You never alt-tab to a terminal mid-thought.
+- **The conversation lives in the browser.** Chat widget in the page, with voice mode if you want it, undo/redo for Claude's changes, a pixel-ruler overlay, and one-click mobile/tablet/desktop previews of the page. You never alt-tab to a terminal mid-thought.
 - **It works on real sites, not just localhost.** Extension mode connects Claude to your actual Chrome — logged-in dashboards, CMS admin panels, staging environments, any URL.
 - **It's Claude Code, not a browser bot.** The agent in your browser has your whole dev environment behind it: it can read a file from your disk and enter it into a CMS, scrape a page and write the analysis into your repo, build a feature and click-test it — in one session. Consumer browser agents are sandboxed away from your code by design; this isn't. And because you watch every action in the page and can interrupt between steps, it's supervised automation, not a bot running loose.
 
@@ -126,7 +127,6 @@ The extension requests broad permissions (`<all_urls>`, `tabs`, `scripting`, `de
 
 - **Cancel** stops Claude after the current step, not mid-execution
 - **Wireframe tool** is not yet supported in extension mode
-- **Extension screenshots** capture the viewport only (no element/full-page capture yet)
 - **Strict-CSP sites** (e.g. linear.app) block scan/evaluate/act in extension mode — the page's Content Security Policy forbids script evaluation. Screenshots, tab control, and chat still work there
 - **Voice output** uses Microsoft Edge TTS and needs a microphone for input
 
