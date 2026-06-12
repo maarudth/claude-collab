@@ -5,7 +5,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getTransport, setTransport, hasTransport, type DesignTransport } from '../transport.js';
 import { PlaywrightTransport } from '../playwright-transport.js';
 import { ExtensionTransport } from '../extension-transport.js';
-import { isExtensionConnected } from '../ws-server.js';
+import { isExtensionConnected, getWSPort, getWSToken } from '../ws-server.js';
 
 const __dirname_browse = dirname(fileURLToPath(import.meta.url));
 const LISTENER_PATH = join(__dirname_browse, '..', '..', 'scripts', 'listener.cjs');
@@ -47,10 +47,40 @@ export function registerBrowseTool(server: McpServer): void {
       }
       let t: DesignTransport;
 
+      const tokenResponse = (port: number, token: string) => ({
+        content: [{
+          type: 'text' as const,
+          text: [
+            `Extension mode: WS server ready on port ${port}.`,
+            `The extension needs the auth token to connect.`,
+            ``,
+            `AUTH TOKEN: ${token}`,
+            ``,
+            `Tell the user: "I've started the extension server. Please open the Claude Collab extension popup in Chrome, paste this auth token, and click Connect. Then I'll continue."`,
+            ``,
+            `After they confirm, call collab_browse with mode: "extension" again — it will connect instantly.`,
+          ].join('\n'),
+        }],
+      });
+
       if (browseMode === 'extension') {
-        // Extension mode — use Chrome extension transport
+        // Extension mode — use Chrome extension transport.
+        // CRITICAL: only ever ONE ExtensionTransport instance per session. Each
+        // instance registers a persistent reconnect hook that attaches a message
+        // handler to the socket — a second instance means a second handler and
+        // every user message delivered twice.
         if (hasTransport() && getTransport().getMode() === 'extension') {
           t = getTransport();
+          if (!t.isReady()) {
+            if (isExtensionConnected()) {
+              // Extension connected while we weren't looking (e.g. token pasted
+              // between calls) — attach to it. Idempotent: per-connection guard.
+              (t as ExtensionTransport).connectExisting();
+            } else {
+              // Still waiting for the user to paste the token
+              return tokenResponse(getWSPort(), getWSToken());
+            }
+          }
         } else if (isExtensionConnected()) {
           const ext = new ExtensionTransport();
           ext.connectExisting();
@@ -60,29 +90,18 @@ export function registerBrowseTool(server: McpServer): void {
           // Two-phase flow: start WS server → return token → user pastes → extension connects
           const ext = new ExtensionTransport();
           const { port, token } = await ext.initServer();
+          // Register the transport NOW — its reconnect hook will wire the message
+          // handler when the extension connects, and the next collab_browse call
+          // must reuse this instance instead of creating a duplicate
+          setTransport(ext);
 
           // Check if extension connects quickly (already has stored token)
           try {
             await ext.waitForConnection(5000); // 5s grace period
-            setTransport(ext);
             t = ext;
           } catch {
             // Extension didn't connect yet — return token for user to paste
-            return {
-              content: [{
-                type: 'text' as const,
-                text: [
-                  `Extension mode: WS server ready on port ${port}.`,
-                  `The extension needs the auth token to connect.`,
-                  ``,
-                  `AUTH TOKEN: ${token}`,
-                  ``,
-                  `Tell the user: "I've started the extension server. Please open the Claude Collab extension popup in Chrome, paste this auth token, and click Connect. Then I'll continue."`,
-                  ``,
-                  `After they confirm, call collab_browse with mode: "extension" again — it will connect instantly.`,
-                ].join('\n'),
-              }],
-            };
+            return tokenResponse(port, token);
           }
         }
       } else {

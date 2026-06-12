@@ -12,7 +12,7 @@
       return;
     }
     const { action, text, selections, imageData, mimeType } = event.data;
-    const senderOrigin = event.origin || window.location.origin;
+    const senderOrigin = event.origin && event.origin !== "null" ? event.origin : "*";
     console.log("[dc-content] Relay event:", action, text?.slice(0, 50));
     if (action === "message" && text) {
       chrome.runtime.sendMessage({

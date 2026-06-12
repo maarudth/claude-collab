@@ -50,8 +50,10 @@
           }
         }
       };
-      // Acknowledge receipt so relay-inject stops retrying
-      window.postMessage({ __dcRelayAck: true }, e.origin || '*');
+      // Acknowledge receipt so relay-inject stops retrying.
+      // file:// pages report origin as the string "null" — invalid postMessage
+      // target (throws, ack lost, relay retries forever). Use '*' there.
+      window.postMessage({ __dcRelayAck: true }, e.origin && e.origin !== 'null' ? e.origin : '*');
     }
   });
 
@@ -288,6 +290,7 @@
     clickMode: false,
     selectedElements: [],       // Derived from modifiedElements when needed
     modifiedElements: {},       // Key → { element, dragDelta, styles }
+    sentSelectionKeys: {},      // Keys already delivered with a chat message — not re-attached
     _currentElementKey: null,   // Key of currently inspected element
     _tabId: TAB_ID,
     api: null
@@ -1258,11 +1261,12 @@
     // Relay message to Node.js via Playwright bridge (no HTTP, no mixed content issues)
     // Include any pending selections so Claude doesn't need a separate collab_selections call
     const msgText = (text || '\ud83d\udcf7') + (hadImage ? ' [IMAGE ATTACHED — use collab_inbox to retrieve it]' : '');
-    // Read selections without clearing the buffer — getSelections() clears it,
-    // which would make a subsequent collab_selections call return empty
+    // Attach only selections not yet delivered — each rides along once, then is
+    // marked sent (re-modifying an element clears the mark). The buffer itself
+    // stays intact so a follow-up collab_selections call still works.
     var selections = [];
     var mods = state.modifiedElements;
-    var modKeys = Object.keys(mods);
+    var modKeys = Object.keys(mods).filter(function(k) { return !state.sentSelectionKeys[k]; });
     if (modKeys.length > 0) {
       selections = modKeys.map(function(k) {
         var entry = mods[k];
@@ -1271,8 +1275,12 @@
         if (Object.keys(entry.styles).length > 0) out.styleChanges = entry.styles;
         return out;
       });
+      modKeys.forEach(function(k) { state.sentSelectionKeys[k] = true; });
     }
-    relayMessage(msgText, selections.length > 0 ? selections : null, relayImage, relayMime).catch(() => { /* bridge may not be available */ });
+    relayMessage(msgText, selections.length > 0 ? selections : null, relayImage, relayMime).catch(function() {
+      // No working relay channel — surface it instead of silently dropping
+      addMessage('⚠ Message not delivered — Claude is not connected to this tab', 'system');
+    });
     input.value = '';
     input.style.height = 'auto';
     try { sessionStorage.removeItem(INPUT_KEY); } catch {}
@@ -1633,6 +1641,7 @@
         } else {
           state.modifiedElements[key].element = e.data.element; // Update info
         }
+        delete state.sentSelectionKeys[key]; // fresh selection → attach to next message
         updateSendSelectionsBtn();
         break;
       }
@@ -1640,6 +1649,7 @@
       case 'dc-element-deselected': {
         var dselKey = elementKey(e.data.element);
         delete state.modifiedElements[dselKey];
+        delete state.sentSelectionKeys[dselKey];
         if (state._currentElementKey === dselKey) state._currentElementKey = null;
         updateSendSelectionsBtn();
         break;
@@ -1653,6 +1663,7 @@
         } else {
           state.modifiedElements[dKey].dragDelta = e.data.delta;
         }
+        delete state.sentSelectionKeys[dKey]; // new modification → attach to next message
         updateSendSelectionsBtn();
         break;
       }
@@ -1662,6 +1673,7 @@
         var sKey = state._currentElementKey;
         if (sKey && state.modifiedElements[sKey]) {
           state.modifiedElements[sKey].styles[e.data.property] = e.data.value;
+          delete state.sentSelectionKeys[sKey]; // new modification → attach to next message
         }
         updateSendSelectionsBtn();
         break;
@@ -1776,6 +1788,7 @@
         return out;
       });
       state.modifiedElements = {};
+      state.sentSelectionKeys = {};
       return result;
     },
 
@@ -1917,6 +1930,9 @@
   window.__dc._addMessage = addMessage;
   window.__dc._broadcast = broadcast;
   window.__dc._showThinking = showThinking;
+  // Voice module sends through this — it works in BOTH extension mode
+  // (MessageChannel port) and Playwright mode (__dcRelayMessage binding)
+  window.__dc._relayMessage = relayMessage;
 
   // Welcome (only if no restored messages)
   if (!persisted || persisted.length === 0) {

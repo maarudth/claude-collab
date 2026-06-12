@@ -17,7 +17,13 @@
 if (!(window as any).__dcRelayInjected) {
   (window as any).__dcRelayInjected = true;
 
-  const origin = window.location.origin;
+  // file:// pages have the literal origin "null" — an invalid postMessage
+  // target that throws on every call. Fall back to '*' there: same-window
+  // postMessage is readable by page scripts regardless of targetOrigin, and
+  // channel security comes from the MessagePort transfer, not the origin.
+  const origin = window.location.origin && window.location.origin !== 'null'
+    ? window.location.origin
+    : '*';
 
   // The active channel — may be replaced during retry handshake
   let activePort1: MessagePort | null = null;
@@ -106,10 +112,11 @@ if (!(window as any).__dcRelayInjected) {
     } catch {}
   }, 50);
 
-  // Legacy stubs — silent no-ops to prevent errors if anything calls them directly
-  (window as any).__dcRelayMessage = () => Promise.resolve();
-  (window as any).__dcRelayCancel = () => Promise.resolve();
-  (window as any).__dcTakeScreenshot = () => Promise.resolve(null);
+  // NOTE: no __dcRelayMessage/__dcRelayCancel/__dcTakeScreenshot stubs here.
+  // Earlier versions defined resolve-silently no-ops "to prevent errors", but
+  // they made delivery failures invisible — voice messages and pre-handshake
+  // sends vanished without a trace. The widget's relay functions reject when
+  // no channel exists, and callers surface that to the user.
 
   // Set window name so the iframe bridge activates
   if (!window.name || !window.name.startsWith('dc-frame-')) {

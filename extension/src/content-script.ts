@@ -26,7 +26,9 @@ function dcContentHandler(event: MessageEvent) {
   }
 
   const { action, text, selections, imageData, mimeType } = event.data;
-  const senderOrigin = event.origin || window.location.origin;
+  // file:// pages report origin as the literal string "null" — invalid as a
+  // postMessage target (throws). Use '*' there; see relay-inject.ts for why.
+  const senderOrigin = event.origin && event.origin !== 'null' ? event.origin : '*';
   console.log('[dc-content] Relay event:', action, text?.slice(0, 50));
 
   if (action === 'message' && text) {

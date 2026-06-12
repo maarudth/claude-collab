@@ -169,9 +169,17 @@
       if (broadcast) broadcast({ text, type: 'user', source: 'voice' });
       if (showThinking) showThinking();
     }
-    // Relay to Node.js via Playwright bridge (wakes up idle listener)
-    if (typeof window.__dcRelayMessage === 'function') {
-      window.__dcRelayMessage(text).catch(() => {});
+    // Relay through the widget's shared relay — works in extension mode
+    // (MessageChannel) and Playwright mode (binding). The old direct
+    // window.__dcRelayMessage call hit a no-op stub in extension mode and
+    // voice messages silently vanished.
+    var relay = dc._relayMessage || window.__dcRelayMessage;
+    if (relay) {
+      relay(text).catch(function() {
+        if (addMessage) addMessage('⚠ Voice message not delivered — Claude is not connected to this tab', 'system');
+      });
+    } else if (addMessage) {
+      addMessage('⚠ Voice message not delivered — no relay channel', 'system');
     }
   }
 

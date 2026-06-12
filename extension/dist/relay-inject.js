@@ -46,7 +46,7 @@
     };
     onPort1Message2 = onPort1Message, makeChannel2 = makeChannel;
     window.__dcRelayInjected = true;
-    const origin = window.location.origin;
+    const origin = window.location.origin && window.location.origin !== "null" ? window.location.origin : "*";
     let activePort1 = null;
     let portDelivered = false;
     const ackHandler = (ev) => {
@@ -77,9 +77,6 @@
       } catch {
       }
     }, 50);
-    window.__dcRelayMessage = () => Promise.resolve();
-    window.__dcRelayCancel = () => Promise.resolve();
-    window.__dcTakeScreenshot = () => Promise.resolve(null);
     if (!window.name || !window.name.startsWith("dc-frame-")) {
       window.name = "dc-frame-extension";
     }
