@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Claude Collab",
-  "version": "0.1.0",
-  "description": "AI-powered visual design collaboration — connects Claude to your real browser",
+  "version": "0.8.0",
+  "description": "Connects Claude Code to your real browser — chat, point at elements, and build together inside the live page",
   "permissions": [
     "activeTab",
     "tabs",

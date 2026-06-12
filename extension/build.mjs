@@ -40,8 +40,12 @@ await build({
   sourcemap: false,
 });
 
-// Copy static files
-copyFileSync(join(staticDir, 'manifest.json'), join(distDir, 'manifest.json'));
+// Copy static files — manifest gets the version stamped from package.json
+// so the extension version can never drift from the release version again.
+const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
+const manifest = JSON.parse(readFileSync(join(staticDir, 'manifest.json'), 'utf-8'));
+manifest.version = pkg.version;
+writeFileSync(join(distDir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 copyFileSync(join(staticDir, 'popup.html'), join(distDir, 'popup.html'));
 
 // Copy icons if they exist
