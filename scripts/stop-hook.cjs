@@ -2,10 +2,13 @@
 /**
  * Stop hook — fires when Claude finishes its turn and goes idle.
  *
- * Sets the idle flag on the MCP server via POST /idle, signaling
- * the background listener that it's safe to consume pending messages.
- *
- * Exits 0 (lets Claude stop normally).
+ * 1. Listener gate: if the background listener is not running, BLOCKS the
+ *    stop (exit 2) so Claude must restart it before going idle — otherwise
+ *    the session goes deaf to widget messages. Escape hatch: if this stop
+ *    was already triggered by a stop-hook block (stop_hook_active), allow
+ *    it through rather than looping forever on a failing restart.
+ * 2. Sets the idle flag on the MCP server via POST /idle, signaling
+ *    the background listener that it's safe to consume pending messages.
  */
 
 const fs = require('fs');
@@ -33,11 +36,33 @@ if (targets.length === 0) process.exit(0); // No collab session
 // Only the collab-owning session may set the idle flag — a different session
 // going idle must not trigger message delivery into this one
 const OWNER_FILE = path.join(PROJECT_ROOT, '.owner-session');
+let hookInput = {};
+try { hookInput = JSON.parse(fs.readFileSync(0, 'utf-8')) || {}; } catch {}
 try {
   const owner = fs.readFileSync(OWNER_FILE, 'utf-8').trim();
-  const sessionId = String((JSON.parse(fs.readFileSync(0, 'utf-8')) || {}).session_id || '');
+  const sessionId = String(hookInput.session_id || '');
   if (owner && sessionId && owner !== sessionId) process.exit(0);
 } catch {} // no owner file or unparsable stdin — proceed (pre-claim sessions)
+
+// Listener gate: going idle without a live listener means the session is
+// deaf to widget messages. Block the stop so Claude restarts it first.
+const PID_FILE = path.join(PROJECT_ROOT, '.listener-pid');
+let listenerAlive = false;
+try {
+  const pid = parseInt(fs.readFileSync(PID_FILE, 'utf-8').trim(), 10);
+  process.kill(pid, 0); // signal 0 = liveness check only
+  listenerAlive = true;
+} catch {}
+
+if (!listenerAlive && !hookInput.stop_hook_active) {
+  const listenerPath = path.join(__dirname, 'listener.cjs');
+  process.stderr.write(
+    'BLOCKED: the collab listener is not running — if you go idle now you cannot hear the user. ' +
+    'Start it with the Bash tool (run_in_background: true):\nnode "' + listenerPath + '"\n' +
+    'Then end your turn.',
+  );
+  process.exit(2);
+}
 
 function tryPort(idx) {
   if (idx >= targets.length) {
