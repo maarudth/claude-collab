@@ -33,3 +33,5 @@ TODO.md
 # Tool artifacts
 .playwright-mcp/
 colab-demo.mp4
+# Demo source videos (GIFs in docs/ are what ships)
+collab-*.mp4
