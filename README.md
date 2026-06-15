@@ -14,18 +14,14 @@ Every browser agent today is one-directional: the agent acts, you watch from a s
 
 - **You point, instead of describing.** Click any element (Ctrl+click for several) and it's attached to your next message — no more "the second button in the nav, no, the other one."
 - **You edit live, too.** The inspector panel shows any element's CSS for real-time editing — tweak values, drag elements around the page, walk up the DOM with arrow keys — and your edits ride along to Claude with your next message, so it builds on what you changed.
-
-  ![The inspector panel open on an element, editing its color with the live color picker](docs/inspector.gif)
-
 - **Claude shows, instead of dumping code.** Mockups appear in a draggable in-page panel, A/B variants as clickable options that apply to the real page, collected inspiration as a moodboard.
-
-  ![Claude offers styling options, you pick one, and it applies live across every card on the page](docs/options.gif)
-
 - **The conversation lives in the browser.** Chat widget in the page, with voice mode if you want it, undo/redo for your inspector edits, a pixel-ruler overlay, in-widget screenshot capture (including draw-a-rectangle), and one-click mobile/tablet/desktop previews of the page. You never alt-tab to a terminal mid-thought. Full tour: [docs/USER-GUIDE.md](docs/USER-GUIDE.md).
-
-  ![One-click responsive previews sweeping the page through mobile and tablet breakpoints](docs/responsive.gif)
 - **It works on real sites, not just localhost.** Extension mode connects Claude to your actual Chrome — logged-in dashboards, CMS admin panels, staging environments, any URL.
 - **It's Claude Code, not a browser bot.** The agent in your browser has your whole dev environment behind it: it can read a file from your disk and enter it into a CMS, scrape a page and write the analysis into your repo, build a feature and click-test it — in one session. Consumer browser agents are sandboxed away from your code by design; this isn't. And because you watch every action in the page and can interrupt between steps, it's supervised automation, not a bot running loose.
+
+![Claude offers styling options, you pick one, and it applies live across every card on the real page](docs/options.gif)
+
+*Ask for options, pick one in the chat, and Claude applies it live across the real page — here, restyling every card in a gallery.*
 
 ## What Claude can do in the shared browser
 
@@ -36,6 +32,10 @@ Every browser agent today is one-directional: the agent acts, you watch from a s
 - **Audit** — WCAG accessibility checks with visual overlays, responsive layout testing across breakpoints, before/after visual diffs
 - **Talk to you** — chat in the page, text-to-speech voice mode, your Claude Code permission prompts mirrored into the widget
 
+![The inspector panel open on an element, editing its color with the live color picker](docs/inspector.gif)
+
+*Open any element in the inspector and edit its CSS live — values, color picker, drag-to-move — and your changes ride along to Claude.*
+
 ## Three modes
 
 | Mode | How | Best for |
@@ -43,6 +43,10 @@ Every browser agent today is one-directional: the agent acts, you watch from a s
 | **Tabs** (default) | Playwright browser, multi-tab via iframes | Comparing reference sites, multi-page work |
 | **Single** | Playwright browser, direct page injection | Deep work on one page, sites that block iframes |
 | **Extension** | Your real Chrome via a Chrome extension | Logged-in sites, real browsing context, any URL |
+
+![One-click responsive previews sweeping the page through mobile and tablet breakpoints](docs/responsive.gif)
+
+*One-click mobile and tablet previews — check the page across breakpoints without leaving it.*
 
 ## Install
 
