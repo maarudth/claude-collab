@@ -32,9 +32,9 @@ Every browser agent today is one-directional: the agent acts, you watch from a s
 - **Audit** — WCAG accessibility checks with visual overlays, responsive layout testing across breakpoints, before/after visual diffs
 - **Talk to you** — chat in the page, text-to-speech voice mode, your Claude Code permission prompts mirrored into the widget
 
-![The inspector panel open on an element, editing its color with the live color picker](docs/inspector.gif)
+![Clicking an element to capture it in the inspector, climbing the DOM with arrow keys, then asking Claude to recolor it](docs/inspector.gif)
 
-*Open any element in the inspector and edit its CSS live — values, color picker, drag-to-move — and your changes ride along to Claude.*
+*Click any element to capture it — climb the DOM with the arrow keys to grab the right one — and it rides along to Claude, so "change this link's color here" just works.*
 
 ## Three modes
 
@@ -44,9 +44,9 @@ Every browser agent today is one-directional: the agent acts, you watch from a s
 | **Single** | Playwright browser, direct page injection | Deep work on one page, sites that block iframes |
 | **Extension** | Your real Chrome via a Chrome extension | Logged-in sites, real browsing context, any URL |
 
-![One-click responsive previews sweeping the page through mobile and tablet breakpoints](docs/responsive.gif)
+![Drawing a rectangle around part of the page to capture it, attaching it to chat, and Claude diagnosing the visual bug](docs/responsive.gif)
 
-*One-click mobile and tablet previews — check the page across breakpoints without leaving it.*
+*Draw a rectangle around anything on the page to capture it, drop it straight into chat, and Claude sees exactly what you mean — here, a spiral getting clipped by its card.*
 
 ## Install
 
