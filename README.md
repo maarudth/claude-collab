@@ -6,7 +6,7 @@
 
 *Extension mode: Claude joins the tab you're already on — paste the token, hit Connect, and it's in the page with you.*
 
-Built as an [MCP server](https://modelcontextprotocol.io/) for Claude Code. Open source, MIT. The official, maintained home is [github.com/maarudth/claude-collab](https://github.com/maarudth/claude-collab) — created by Adam; copies elsewhere are forks.
+Built as an [MCP server](https://modelcontextprotocol.io/) for Claude Code. Open source, Apache 2.0. The official, maintained home is [github.com/maarudth/claude-collab](https://github.com/maarudth/claude-collab) — created by Adam; copies elsewhere are forks.
 
 ## Why
 
@@ -152,4 +152,4 @@ npm start            # Run the MCP server directly
 
 ## License
 
-[MIT](LICENSE)
+[Apache 2.0](LICENSE)

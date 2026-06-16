@@ -3,7 +3,7 @@
   "version": "0.8.0",
   "type": "module",
   "description": "Pair with Claude Code inside the live page — a shared browser where you point, chat, and design together",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": ["claude", "claude-code", "mcp", "collaboration", "browser", "pair-design", "ui", "ux", "playwright", "chrome-extension"],
   "engines": {
     "node": ">=18"
