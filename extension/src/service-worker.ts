@@ -13,6 +13,18 @@ function sanitizeError(msg: string): string {
     .slice(0, 500);
 }
 
+/**
+ * A handled, expected condition — not a bug. Unsupported tab (chrome://, file://),
+ * CSP-blocked eval, etc. Still surfaced to the user as guidance, but logged quietly
+ * (console.debug) so the console stays calm and real errors actually stand out.
+ */
+class ExpectedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ExpectedError';
+  }
+}
+
 let ws: WebSocket | null = null;
 let wsPort: number = 0;
 let wsToken: string = '';
@@ -93,8 +105,10 @@ function connect(port: number): void {
 
   ws.onmessage = async (event) => {
     console.log('[collab] WS message received:', typeof event.data, String(event.data).slice(0, 200));
+    let cmdType = 'unknown';
     try {
       const msg = JSON.parse(event.data as string);
+      cmdType = msg.type ?? 'unknown';
       console.log('[collab] Parsed command:', msg.type, msg.id);
       const result = await handleCommand(msg);
       console.log('[collab] Command result:', msg.type, JSON.stringify(result).slice(0, 200));
@@ -105,7 +119,14 @@ function connect(port: number): void {
         console.warn('[collab] Cannot send response — ws closed or no id', msg.id, ws?.readyState);
       }
     } catch (err: any) {
-      console.error('[collab] Command error:', err);
+      if (err instanceof ExpectedError) {
+        // Handled condition (unsupported tab, blocked eval) — quiet, not a red error.
+        console.debug(`[collab] ${cmdType} unavailable: ${err.message}`);
+      } else {
+        // Print message + stack inline so the real origin (widget-bundle.js:NNNN, etc.)
+        // is visible without expanding — the bare err only shows this call site.
+        console.error(`[collab] Command error (${cmdType}): ${err?.message ?? err}\n${err?.stack ?? ''}`);
+      }
       try {
         const msg = JSON.parse(event.data as string);
         if (msg.id && ws && ws.readyState === WebSocket.OPEN) {
@@ -246,7 +267,7 @@ async function handleEval(msg: { type: string; code: string; tabId?: number }): 
       // Strict page CSP (no 'unsafe-eval') blocks the indirect eval in the MAIN
       // world — executeScript itself is exempt, the eval inside it is not
       if (/unsafe-eval|Content Security Policy/i.test(result.__error)) {
-        throw new Error(
+        throw new ExpectedError(
           'This site\'s Content Security Policy blocks script evaluation in extension mode — ' +
           'scan/evaluate/act are unavailable on this tab. Screenshots, tab switching, and the ' +
           'chat widget still work. Known limitation; see README.'
@@ -282,7 +303,7 @@ async function handleTabAction(msg: any): Promise<any> {
       if (!tab?.id) throw new Error('No active tab to attach to');
       const url = tab.url || '';
       if (!/^https?:/i.test(url)) {
-        throw new Error(
+        throw new ExpectedError(
           `Cannot attach to the current tab (${url.split(':')[0] || 'unknown'}: page). ` +
           'Ask the user to switch to a normal webpage, then attach again.',
         );
@@ -732,7 +753,8 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
     await hydrateWidget(tabId);
     console.log(`[collab] Widget re-injected into tab ${tabId}`);
   } catch (err) {
-    console.error(`[collab] Failed to re-inject widget into tab ${tabId}:`, err);
+    // Expected on error pages / chrome:// / restricted frames — can't inject there. Quiet.
+    console.debug(`[collab] Skipped re-inject into tab ${tabId} (restricted or error page):`, (err as any)?.message ?? err);
   }
 });
 

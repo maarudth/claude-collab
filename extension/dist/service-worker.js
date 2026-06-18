@@ -4,6 +4,12 @@
   function sanitizeError(msg) {
     return msg.replace(/[A-Z]:\\[^\s'"]+/gi, "[path]").replace(/\/(?:home|Users|tmp|var|etc|usr|opt)[^\s'"]+/g, "[path]").slice(0, 500);
   }
+  var ExpectedError = class extends Error {
+    constructor(message) {
+      super(message);
+      this.name = "ExpectedError";
+    }
+  };
   var ws = null;
   var wsPort = 0;
   var wsToken = "";
@@ -61,8 +67,10 @@
     };
     ws.onmessage = async (event) => {
       console.log("[collab] WS message received:", typeof event.data, String(event.data).slice(0, 200));
+      let cmdType = "unknown";
       try {
         const msg = JSON.parse(event.data);
+        cmdType = msg.type ?? "unknown";
         console.log("[collab] Parsed command:", msg.type, msg.id);
         const result = await handleCommand(msg);
         console.log("[collab] Command result:", msg.type, JSON.stringify(result).slice(0, 200));
@@ -73,7 +81,12 @@
           console.warn("[collab] Cannot send response \u2014 ws closed or no id", msg.id, ws?.readyState);
         }
       } catch (err) {
-        console.error("[collab] Command error:", err);
+        if (err instanceof ExpectedError) {
+          console.debug(`[collab] ${cmdType} unavailable: ${err.message}`);
+        } else {
+          console.error(`[collab] Command error (${cmdType}): ${err?.message ?? err}
+${err?.stack ?? ""}`);
+        }
         try {
           const msg = JSON.parse(event.data);
           if (msg.id && ws && ws.readyState === WebSocket.OPEN) {
@@ -183,7 +196,7 @@
       const result = results[0].result;
       if (result && typeof result === "object" && "__error" in result) {
         if (/unsafe-eval|Content Security Policy/i.test(result.__error)) {
-          throw new Error(
+          throw new ExpectedError(
             "This site's Content Security Policy blocks script evaluation in extension mode \u2014 scan/evaluate/act are unavailable on this tab. Screenshots, tab switching, and the chat widget still work. Known limitation; see README."
           );
         }
@@ -211,7 +224,7 @@
         if (!tab?.id) throw new Error("No active tab to attach to");
         const url = tab.url || "";
         if (!/^https?:/i.test(url)) {
-          throw new Error(
+          throw new ExpectedError(
             `Cannot attach to the current tab (${url.split(":")[0] || "unknown"}: page). Ask the user to switch to a normal webpage, then attach again.`
           );
         }
@@ -562,7 +575,7 @@
       await hydrateWidget(tabId);
       console.log(`[collab] Widget re-injected into tab ${tabId}`);
     } catch (err) {
-      console.error(`[collab] Failed to re-inject widget into tab ${tabId}:`, err);
+      console.debug(`[collab] Skipped re-inject into tab ${tabId} (restricted or error page):`, err?.message ?? err);
     }
   });
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {

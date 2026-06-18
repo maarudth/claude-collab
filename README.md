@@ -56,15 +56,26 @@ Prerequisites: [Node.js](https://nodejs.org/) 18+, [Claude Code](https://docs.an
 git clone https://github.com/maarudth/claude-collab.git
 cd claude-collab
 npm install
-npm run setup        # installs the Claude Code hooks automatically
-claude mcp add collab -- npx tsx src/index.ts   # run from the repo directory
+npm run setup        # installs the hooks, then prints your exact `claude mcp add` command
 ```
+
+Then run the `claude mcp add collab …` command that `npm run setup` prints at the end — it uses this repo's **absolute** path, so collab works no matter which directory you launch Claude Code from.
 
 `npm run setup` configures the four Claude Code hooks (real-time message delivery, cancel support, idle wake-up, permission mirroring) in your global `~/.claude/settings.json`, with a backup of your existing settings. Use `npm run setup -- --project` to install into the current project's `.claude/settings.json` instead, and `npm run setup -- --remove` to uninstall. Re-running is safe — it replaces stale entries, including after moving the repo.
 
-### Extension mode (optional, recommended)
+### Built-in browser (tabs / single mode)
 
-To let Claude work in your real Chrome:
+The default mode opens a built-in Chromium — the fastest way to try collab, with no extension to load. Playwright's browser isn't bundled with `npm install`, so download it once:
+
+```bash
+npx playwright install chromium
+```
+
+Only using extension mode (your real Chrome)? You can skip this — it needs no download.
+
+### Extension mode — your real Chrome (recommended)
+
+The most powerful way to use collab: Claude works in your actual browser, with your real logins and session. To enable it:
 
 ```bash
 npm run build:ext

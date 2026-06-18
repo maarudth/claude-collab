@@ -27,6 +27,27 @@ export function isSingleMode(): boolean {
 }
 
 /**
+ * Launch Playwright's bundled Chromium, turning its cryptic "Executable doesn't
+ * exist" error into a clear, actionable one. The bundled browser isn't downloaded
+ * by `npm install`, and extension mode never needs it — so tabs/single users who
+ * skip `npx playwright install` get told exactly what to run instead of a stack trace.
+ */
+async function launchChromium(options: Parameters<typeof chromium.launch>[0]): Promise<Browser> {
+  try {
+    return await chromium.launch(options);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/Executable doesn't exist|playwright install/i.test(msg)) {
+      throw new Error(
+        "Chromium for tabs/single mode isn't installed. Run `npx playwright install chromium` " +
+        'in the collab repo, then try again. (Extension mode uses your real Chrome — no download needed.)',
+      );
+    }
+    throw err;
+  }
+}
+
+/**
  * Build the wrapper HTML page that hosts the tab bar and widget in the parent frame.
  * Tab manager creates iframes dynamically. Widget floats on top.
  */
@@ -78,7 +99,7 @@ export async function ensureBrowser(): Promise<{ browser: Browser; page: Page }>
   }
 
   console.error('[collab] Launching Chromium...');
-  browser = await chromium.launch({
+  browser = await launchChromium({
     headless: false,
     args: [
       '--window-size=1400,900',
@@ -220,7 +241,7 @@ export async function ensureBrowserSingle(url: string): Promise<{ browser: Brows
   }
 
   console.error('[collab] Launching Chromium (single-page mode)...');
-  browser = await chromium.launch({
+  browser = await launchChromium({
     headless: false,
     args: [
       '--window-size=1400,900',
