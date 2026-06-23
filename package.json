@@ -4,7 +4,18 @@
   "type": "module",
   "description": "Pair with Claude Code inside the live page — a shared browser where you point, chat, and design together",
   "license": "Apache-2.0",
-  "keywords": ["claude", "claude-code", "mcp", "collaboration", "browser", "pair-design", "ui", "ux", "playwright", "chrome-extension"],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "mcp",
+    "collaboration",
+    "browser",
+    "pair-design",
+    "ui",
+    "ux",
+    "playwright",
+    "chrome-extension"
+  ],
   "engines": {
     "node": ">=18"
   },
@@ -12,11 +23,11 @@
     "start": "tsx src/index.ts",
     "setup": "node scripts/setup.cjs",
     "build:ext": "node extension/build.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:host-compat": "node test/host-compat.mjs"
   },
   "dependencies": {
     "@andresaya/edge-tts": "^1.8.0",
-    "@anthropic-ai/sdk": "^0.78.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@types/ws": "^8.18.1",
     "playwright": "^1.52.0",

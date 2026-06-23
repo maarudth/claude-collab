@@ -134,6 +134,12 @@ How Claude is guided: a compact core protocol ships as MCP server instructions, 
 
 You type in the widget → a hook delivers your message to Claude *between its tool calls* (interrupting its current plan if needed). When Claude is idle, a lightweight background listener wakes it the second you send something. The Cancel button stops Claude after its current step. All of this is set up automatically by `npm run setup` — no manual wiring.
 
+## Works with other MCP hosts
+
+Collab is a standard MCP server, so its 26 tools work with any MCP-compatible host — not just Claude Code. What's Claude-Code-specific is the *real-time loop above*: the mid-task interrupt and idle-wake ride Claude Code hooks (no MCP standard provides them). On other hosts Collab runs **turn-based** — you still chat in the widget and point at elements; the agent picks up your messages on its next turn via `collab_inbox` instead of being interrupted mid-step.
+
+Verified by a generic MCP client (the official MCP SDK client — what hosts use under the hood) connecting, listing all tools, and driving browse → scan → inbox → close with no hooks installed: see [`test/host-compat.mjs`](test/host-compat.mjs).
+
 ## Extension permissions
 
 The extension requests broad permissions (`<all_urls>`, `tabs`, `scripting`, `debugger`) because it injects the collaboration widget and executes Claude's commands on whatever page you take it to; `debugger` is used only for full-page screenshots. All communication is local (`127.0.0.1`) and authenticated with a per-session token sent as the first WebSocket message (never in the URL).
