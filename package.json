@@ -24,7 +24,8 @@
     "setup": "node scripts/setup.cjs",
     "build:ext": "node extension/build.mjs",
     "typecheck": "tsc --noEmit",
-    "test:host-compat": "node test/host-compat.mjs"
+    "test:host-compat": "node test/host-compat.mjs",
+    "footprint": "node test/footprint.mjs"
   },
   "dependencies": {
     "@andresaya/edge-tts": "^1.8.0",

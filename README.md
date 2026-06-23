@@ -130,6 +130,8 @@ The browser opens with a chat widget in the page — from there, talk to Claude 
 
 How Claude is guided: a compact core protocol ships as MCP server instructions, and a full playbook (`docs/PLAYBOOK.md`) is read on demand — workflows, per-tool gotchas, limits.
 
+Footprint: ~4.8k tokens of context upfront (all 26 tool definitions + server instructions — roughly 2–3% of a 200k window). Measured, not declared: run `npm run footprint`.
+
 ## How the real-time loop works
 
 You type in the widget → a hook delivers your message to Claude *between its tool calls* (interrupting its current plan if needed). When Claude is idle, a lightweight background listener wakes it the second you send something. The Cancel button stops Claude after its current step. All of this is set up automatically by `npm run setup` — no manual wiring.
